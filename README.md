@@ -21,7 +21,7 @@ Maroon Crane is a Laravel-based e-commerce platform. This document outlines the 
 
     ```
     APP_NAME="Maroon Crane"
-    APP_URL=http://localhost/maroon-crane
+    APP_URL=http://localhost/maroon-crane-v2
     AUTH_PASSWORD_RESET_TOKEN_TABLE=verifications
     ENABLE_TWO_FACTOR_AUTH_ADMIN=false # Make it true if you want to receive an Email OTP
     ```
@@ -31,7 +31,7 @@ Maroon Crane is a Laravel-based e-commerce platform. This document outlines the 
     Livewire is used for Datatables only.
 
     - Open `livewire.php` from the `routes` folder
-    - Change `/maroon-crane/` to match your subdomain.
+    - Change `/maroon-crane-v2/` to match your subdomain.
     - If not using a subdomain, you can remove this part.
 
 3. Change the `.env` for **Google Login in Localhost** _(Change for Production)_
@@ -41,7 +41,7 @@ Maroon Crane is a Laravel-based e-commerce platform. This document outlines the 
 
     GOOGLE_CLIENT_SECRET=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
 
-    GOOGLE_REDIRECT_URI=http://localhost/maroon-crane/auth/google/callback
+    GOOGLE_REDIRECT_URI=http://localhost/maroon-crane-v2/auth/google/callback
     ```
 
 4. Run the following commands for `final setup`
