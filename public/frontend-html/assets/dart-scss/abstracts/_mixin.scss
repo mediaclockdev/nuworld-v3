@@ -1,0 +1,304 @@
+@use "sass:math";
+
+@mixin optional-at-root($sel) {
+  @at-root #{if(not &, $sel, selector-append(&, $sel))} {
+    @content;
+  }
+}
+@mixin transition($property: all, $duration: 0.4s, $timing-function: ease) {
+  transition: $property $duration $timing-function;
+}
+
+//  PLACEHOLDER
+@mixin placeholder {
+  @include optional-at-root('::-webkit-input-placeholder') {
+    @content;
+  }
+
+  @include optional-at-root(':-moz-placeholder') {
+    @content;
+  }
+
+  @include optional-at-root('::-moz-placeholder') {
+    @content;
+  }
+
+  @include optional-at-root(':-ms-input-placeholder') {
+    @content;
+  }
+
+  .placeholder {
+    @content;
+  }
+}
+
+
+
+// SELECTION
+@mixin selection {
+  ::-webkit-selection {
+    @content;
+  }
+
+  ::-moz-selection {
+    @content;
+  }
+
+  ::selection {
+    @content;
+  }
+}
+
+
+// CLEARFIX
+@mixin clearfix() {
+  clear: both;
+
+  &::after {
+    display: block;
+    content: "";
+    clear: both;
+  }
+}
+
+
+@mixin fullH() {
+  height: 100vh;
+}
+
+@mixin imageFit() {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@mixin imageTrans() {
+  overflow: hidden;
+  img {
+    transition: transform 0.4s ease;
+    transform: scale(1);
+  }
+  &:hover {
+    img {
+      transform: scale(1.05);
+      object-position: center;
+    }
+  }
+}
+
+@mixin minH($adjust: '') {
+  @if ($adjust !='') {
+    min-height: calc(99vh #{$adjust});
+    min-height: calc(calc(var(--vh, 1vh) * 100) #{$adjust});
+  }
+
+  @else {
+    min-height: 99vh;
+    min-height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+
+
+@mixin maxH($adjust: '') {
+  @if ($adjust !='') {
+    max-height: calc(99vh #{$adjust});
+    max-height: calc(calc(var(--vh, 1vh) * 100) #{$adjust});
+  }
+
+  @else {
+    max-height: 99vh;
+    max-height: calc(var(--vh, 1vh) * 100);
+  }
+}
+
+
+
+// HALF HEIGHT
+@mixin halfH($adjust: '') {
+  @if ($adjust !='') {
+    height: calc(50vh #{$adjust});
+    height: calc(calc(var(--vh, 1vh) * 50) #{$adjust});
+  }
+
+  @else {
+    height: 50vh;
+    height: calc(var(--vh, 1vh) * 50);
+  }
+}
+
+
+
+@mixin halfminH($adjust: '') {
+  @if ($adjust !='') {
+    min-height: calc(50vh #{$adjust});
+    min-height: calc(calc(var(--vh, 1vh) * 50) #{$adjust});
+  }
+
+  @else {
+    min-height: 50vh;
+    min-height: calc(var(--vh, 1vh) * 50);
+  }
+}
+
+
+
+@mixin halfmaxH($adjust: '') {
+  @if ($adjust !='') {
+    max-height: calc(50vh #{$adjust});
+    max-height: calc(calc(var(--vh, 1vh) * 50) #{$adjust});
+  }
+
+  @else {
+    max-height: 50vh;
+    max-height: calc(var(--vh, 1vh) * 50);
+  }
+}
+
+// ASPECT RATIO
+@mixin aspect-ratio($ar: '16:9') {
+  position: relative;
+  height: 0;
+  overflow: hidden;
+
+  &>* {
+      position: absolute !important;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      margin: auto;
+  }
+
+  &>img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+  }
+
+  &>*:not(img) {
+      width: 100%;
+      height: 100%;
+      // object-fit: cover;
+  }
+
+  @if($ar =='16:9') {
+      padding-top: 50%;
+  }
+
+  @else if($ar =='4:3') {
+      padding-bottom: 75%;
+  }
+
+  @else if($ar =='3:4') {
+      padding-top: 133.33%;
+  }
+}
+
+
+// FUNCTIONS
+@function toRem($value) {
+  $rootRemValue: 16;
+  $remValue: math.div($value, $rootRemValue) * 1rem;
+  @return $remValue;
+}
+
+@function toEm($value) {
+  $rootRemValue: 16;
+  $remValue: math.div($value, $rootRemValue) * 1em;
+  @return $remValue;
+}
+
+@function toPercentage($value, $width) {
+  @return percentage($value / $width);
+}
+
+// COLORS
+@mixin imgW() {
+  -webkit-filter: brightness(0) invert(1);
+  filter: brightness(0) invert(1);
+}
+
+@mixin imgB() {
+  -webkit-filter: saturate(0%) grayscale(100%) brightness(69%) contrast(1000%);
+}
+
+@mixin imgG() {
+  -webkit-filter: grayscale(100%);
+  filter: grayscale(100%);
+}
+
+@mixin imgN() {
+  -webkit-filter: brightness(100%) invert(0);
+  filter: brightness(100%) invert(0);
+}
+
+
+@mixin setVarMediaSizing($fit: cover, $pos: center) {
+  position: relative;
+
+  &>* {
+    display: block;
+    padding-top: var(--size);
+    position: relative;
+    overflow: hidden;
+  }
+
+  img,
+  picture,
+  iframe:not([src*="vimeo.com"]) {
+    width: 100%;
+    height: 100%;
+  }
+
+  figure img,
+  picture,
+  iframe:not([src*="vimeo.com"]) {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  img,
+  iframe:not([src*="vimeo.com"]) {
+    object-fit: $fit;
+    object-position: $pos;
+  }
+
+  iframe[src*="vimeo.com"] {
+    width: 100%;
+    min-width: calc(105% + calc(var(--size) * var(--vimeo-scale, 1)));
+    height: calc(calc(var(--size) * var(--vimeo-scale, 1)) + 100%);
+    position: absolute;
+    top: calc(-1 * calc(calc(var(--size) * var(--vimeo-scale, 1)) / 2));
+    left: calc(-1 * calc(calc(var(--size) * var(--vimeo-scale, 1)) / 2));
+    right: calc(-1 * calc(calc(var(--size) * var(--vimeo-scale, 1)) / 2));
+    object-fit: $fit;
+    object-position: $pos;
+  }
+}
+
+
+@mixin createRatio($w, $h, $fit: cover, $pos: center) {
+  --size: #{math.div(($h * 100), $w) + '%'};
+  @include setVarMediaSizing($fit, $pos);
+}
+
+
+@mixin createVarRatio($w, $h) {
+  --size: #{math.div(($h * 100), $w) + '%'};
+}
+
+@mixin force-break() {
+  -ms-word-break: break-all;
+  word-break: break-all;
+
+  word-break: break-word;
+
+  -webkit-hyphens: auto;
+  -moz-hyphens: auto;
+  -ms-hyphens: auto;
+  hyphens: auto;
+}

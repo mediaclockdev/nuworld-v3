@@ -1,0 +1,36 @@
+{
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "editor.detectIndentation": false,
+    "editor.formatOnSave": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+    "prettier.singleQuote": true,
+    "prettier.trailingComma": "all",
+    "prettier.tabWidth": 2,
+    "prettier.useTabs": false,
+    "prettier.endOfLine": "lf",
+    "prettier.semi": false,
+    "prettier.printWidth": 100,
+    "bladeFormatter.format.indentSize": 2,
+    "auto-close-tag.activationOnLanguage": [
+        "xml",
+        "php",
+        "blade",
+        "ejs",
+        "jinja",
+        "javascript",
+        "plaintext",
+        "markdown",
+        "cfml",
+        "HTML (EEx)",
+        "HTML (Eex)",
+        "plist"
+    ],
+    "codeium.snoozeTime": 1,
+    "cSpell.words": ["endforeach", "Laravel", "Livewire"]
+}

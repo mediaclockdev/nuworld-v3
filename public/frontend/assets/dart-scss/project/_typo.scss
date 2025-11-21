@@ -1,0 +1,185 @@
+@use './../abstracts/mixin' as *;
+@use './colors' as *;
+
+
+:root {
+  --site-gutter: 5rem;
+}
+
+@media(min-width: 320px) {
+  :root {
+    --site-gutter: 3rem;
+  }
+}
+
+@media(min-width: 1300px) {
+  :root {
+    --site-gutter: 4rem;
+  }
+}
+
+@media(min-width: 1800px) {
+  :root {
+    --site-gutter: 6rem;
+  }
+}
+
+.font140 {
+  font-size: toRem(140);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(126);
+  }
+}
+
+.font100 {
+  font-size: toRem(100);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(90);
+  }
+}
+
+.font80 {
+  font-size: toRem(80);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(72);
+  }
+}
+
+.font64 {
+  font-size: toRem(64);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(57.6);
+  }
+}
+
+.font60 {
+  font-size: toRem(60);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(54);
+  }
+}
+
+.font56 {
+  font-size: toRem(56);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(48);
+  }
+}
+
+.font45 {
+  font-size: toRem(45);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(40.5);
+  }
+}
+
+.font35 {
+  font-size: toRem(35);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(31.5);
+  }
+}
+
+.font30 {
+  font-size: toRem(30);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(27);
+  }
+}
+
+.font28 {
+  font-size: toRem(28);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(25.2);
+  }
+}
+
+.font25 {
+  font-size: toRem(25);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(22.5);
+  }
+}
+
+.font24 {
+  font-size: toRem(24);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(21.6);
+  }
+}
+
+.font22 {
+  font-size: toRem(22);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(19.8);
+  }
+}
+
+.font20 {
+  font-size: toRem(20);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(18);
+  }
+}
+
+.font18 {
+  font-size: toRem(18);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(16.2);
+  }
+}
+
+.font16 {
+  font-size: toRem(16);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(14.4);
+  }
+}
+
+.font15 {
+  font-size: toRem(15);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(13.5);
+  }
+}
+
+.font14 {
+  font-size: toRem(14);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(12.6);
+  }
+}
+
+.font12 {
+  font-size: toRem(12);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(10.8);
+  }
+}
+
+.font10 {
+  font-size: toRem(10);
+
+  @media(max-width: 1600px) {
+    font-size: toRem(9);
+  }
+}

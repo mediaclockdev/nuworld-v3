@@ -1,0 +1,468 @@
+@use "./../abstracts/mixin" as *;
+@use "./../abstracts/util" as *;
+@use './../project/colors' as *;
+@use './../project/typo' as *;
+
+:root {
+    --frm-capsule-border-radius: 4px;
+
+    @media(max-width: 760px) {
+        --frm-capsule-border-radius: 4px;
+    }
+}
+
+input:focus,
+input::after,
+select:focus,
+select:after {
+    box-shadow: 0 0 0 0 !important;
+    outline: 0 !important;
+}
+
+.form-control:focus {
+    border-color: initial !important;
+}
+
+
+.form-inline {
+    display: flex;
+    flex-wrap: wrap;
+
+    &>*+* {
+        margin-left: 0.70rem;
+    }
+}
+
+.field-error {
+    --frm-border-color: color(error);
+}
+
+.allForm {
+    --fsize: toRem(18);
+    --frmPad: 16px;
+    --frmRadius: 0px;
+    --fsizeHasValue: 12px;
+    --frmLabelClr: #555555;
+    --frmClr: #333333;
+    --frmBorderClr: #e7e7e7;
+    overflow: hidden;
+    padding-top: 8px;
+    @media(max-width: 1600px) {
+        --fsize: toRem(16.2);
+    }
+}
+
+// form autofill
+.allForm input:-webkit-autofill,
+.allForm input:-webkit-autofill:hover,
+.allForm input:-webkit-autofill:focus,
+.allForm textarea:-webkit-autofill,
+.allForm textarea:-webkit-autofill:hover,
+.allForm textarea:-webkit-autofill:focus,
+.allForm select:-webkit-autofill,
+.allForm select:-webkit-autofill:hover,
+.allForm select:-webkit-autofill:focus {
+    transition: background-color 50000s ease-in-out 0s;
+    -webkit-transition: background-color 50000s ease-in-out 0s;
+    -webkit-text-fill-color: var(--frmClr) !important;
+}
+
+// remove safari autofill human icon
+.allForm input::-webkit-contacts-auto-fill-button {
+    visibility: hidden;
+    display: none !important;
+    pointer-events: none;
+    position: absolute;
+    right: 0;
+}
+
+// input - text, passord, email
+.allForm .form-element {
+    width: 100%;
+    float: left;
+    position: relative;
+    margin-bottom: 35px;
+
+
+    &.required {
+        label {
+            padding-right: 10px;
+
+            &:before {
+                content: "*";
+                position: absolute;
+                right: 0;
+                top: 5px;
+                color: color(error);
+                font-size: 12px;
+                font-weight: 500;
+                @media(max-width: 1600px) {
+                    font-size: toRem(10.8);
+                }
+            }
+        }
+    }
+
+    &.no-form-field {
+        line-height: 48px;
+
+        &>*:not(:last-child) {
+            margin-right: 15px;
+        }
+    }
+
+    &.field-error .form-field {
+        --frmBorderClr: #{color(error)};
+    }
+
+    .form-field,
+    .form-select {
+        width: 100%;
+        min-height: 52px;
+        font-weight: inherit;
+        text-align: left;
+        padding: 8px 20px;
+        
+        border: none;
+        border: 1px solid var(--frmBorderClr);
+        font-size: toRem(18);
+        background: transparent;
+        resize: none;
+        border-radius: 0 !important;
+        color: var(--frmClr);
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        @media(max-width: 1600px) {
+            font-size: toRem(16.2);
+        }
+    }
+
+    label {
+        font-weight: inherit;
+        width: auto;
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: toRem(17);
+        line-height: 1.3;
+        color: var(--frmLabelClr);
+        position: absolute;
+        pointer-events: none;
+        top: 16px;
+        left: var(--frmPad);
+        transition: 0.3s;
+        -webkit-transition: 0.3s;
+        -moz-transition: 0.3s;
+        -ms-transition: 0.3s;
+        -o-transition: 0.3s;
+        background-color: color(whitec);
+
+        @media(max-width: 1600px) {
+            font-size: toRem(15.3);
+        }
+
+        em {
+            color: color(error);
+        }
+    }
+
+    &.form-textarea {
+        width: 100%;
+
+        .form-field {
+            outline: none;
+            height: 100px;
+            line-height: 22px;
+            padding-top: 25px;
+        }
+    }
+
+    &.has-value {
+
+        .form-field,
+        .form-select {
+            border-color: #000000;
+        }
+
+        label {
+            color: #555;
+            font-size: toRem(14);
+            top: -8px;
+            opacity: 1;
+            @media(max-width: 1600px) {
+                font-size: toRem(12.6);
+            }
+        }
+    }
+
+    &.form-selects {
+        .form-select {
+            padding-right: 40px;
+        }
+
+        &:after {
+            content: "";
+            width: 10px;
+            height: 10px;
+            position: absolute;
+            right: 14px;
+            bottom: 23px;
+            transform: rotate(45deg);
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            pointer-events: none;
+
+            @media(max-width: 1600px) {
+                bottom: 25px;
+            }
+        }
+    }
+}
+
+
+// FOR INLINE FORM ELEMENT
+.allForm .form-flexsb {
+    width: 100%;
+    float: left;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    position: relative;
+
+    b {
+        color: color(error);
+    }
+
+    i {
+        left: 36px;
+        white-space: nowrap;
+    }
+}
+
+.allForm .form-flexsb>* {
+    .captcha {
+        width: 36px;
+        height: 36px;
+        padding: 6px;
+        border: 1px solid var(--frmBorderClr);
+        font-size: var(--fsize);
+    }
+}
+
+// ALL ERRO AND SUCCESS
+i.msg-error,
+label.error,
+i.error {
+    position: absolute;
+    top: 103%;
+    left: 0;
+    font-size: 12px;
+    line-height: normal;
+    font-style: normal;
+    color: color(error);
+    font-weight: normal;
+    @media(max-width: 1600px) {
+        font-size: toRem(12.6);
+    }
+    &.msg-error-full {
+        white-space: nowrap;
+    }
+}
+
+.number_product {
+    position: relative;
+    max-width: 80px;
+    @media(max-width: 1600px) {
+        max-width: 72px;
+    }
+    input[type="text"] {
+        border: 1px solid color(border);
+        background-color: color(border);
+        border-radius: 0;
+        padding: 8px 24px 8px 18px;
+        font-size: toRem(18);
+        border-radius: 0;
+        width: 100%;
+        height: 55px;
+        @media(max-width: 1600px) {
+            padding: 7.2px 21.6px 7.2px 16.2px;
+            font-size: toRem(16.2);
+            height: 49.5px;
+        }
+    }
+    span {
+        position: absolute;
+        width: 24px;
+        height: 20px;
+        right: 2px;
+        cursor: pointer;
+        &.plus {
+            top: 4px;
+        }
+        &.minus {
+            bottom: 6px;
+        }
+    }
+    &.disabled {
+        pointer-events: none;
+        opacity: 0.5;
+    }
+}
+
+/*  Price Range*/
+.price-input {
+    width: 100%;
+    display: flex;
+    margin: 10px 0 20px;
+  
+    .field {
+        display: flex;
+        width: 100%;
+        height: 45px;
+        align-items: center;
+  
+        input {
+            width: 100%;
+            height: 100%;
+            outline: none;
+            font-size: toRem(18);
+            margin-left: 12px;
+            text-align: center;
+            border: 1px solid color(border);
+            -moz-appearance: textfield;
+            @media(max-width: 1600px) {
+                font-size: toRem(16.2);
+            }
+        }
+    }
+  
+    .separator {
+        width: 130px;
+        display: flex;
+        font-size: toRem(18);
+        align-items: center;
+        justify-content: center;
+        @media(max-width: 1600px) {
+            font-size: toRem(16.2);
+        }
+    }
+}
+  
+input[type="number"] {
+    &::-webkit-outer-spin-button,
+    &::-webkit-inner-spin-button {
+      -webkit-appearance: none;
+    }
+}
+  
+.sliders {
+    height: 5px;
+    position: relative;
+    background: color(gry);
+  
+    .progress {
+        height: 100%;
+        left: 25%;
+        right: 25%;
+        position: absolute;
+        background: color(primary);
+    }
+}
+  
+.range-input {
+    position: relative;
+  
+    input {
+        position: absolute;
+        width: 100%;
+        height: 5px;
+        top: -5px;
+        background: none;
+        pointer-events: none;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+    }
+}
+  
+input[type="range"] {
+    &::-webkit-slider-thumb {
+        height: 17px;
+        width: 17px;
+        border-radius: 50%;
+        background: color(primary);
+        pointer-events: auto;
+        -webkit-appearance: none;
+    }
+  
+    &::-moz-range-thumb {
+        height: 17px;
+        width: 17px;
+        border: none;
+        border-radius: 50%;
+        background: color(primary);
+        pointer-events: auto;
+        -moz-appearance: none;
+    }
+}
+
+.password-element {
+    padding-right: 35px !important;
+}
+
+/* For Common Radio Buttons */
+
+.radio {
+    position: relative;
+}
+
+/* input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+} */
+
+.checkmark {
+    position: absolute;
+    top: 2px;
+    left: 0;
+    height: 18px;
+    width: 18px;
+    border: 2px solid color(blackc);
+    border-radius: 50%;
+}
+
+.radio:hover input~.checkmark {
+    background-color: color(lightbg);
+}
+
+.radio input:checked~.checkmark {
+    border: 2px solid color(blackc);
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+}
+
+.radio input:checked~.checkmark:after {
+    display: block;
+}
+
+.radio .checkmark:after {
+    top: 3px;
+    left: 3px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: color(blackc);
+}
+
+.radio label {
+    color: color(blackc);
+    padding-left: 30px;
+    cursor: pointer;
+    margin-bottom: 0;
+    position: relative;
+}

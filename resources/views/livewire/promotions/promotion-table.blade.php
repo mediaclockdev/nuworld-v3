@@ -1,0 +1,152 @@
+<div>
+  <div class="d-flex filter-small justify-content-end align-items-center mb-2">
+    <div class="d-flex me-2">
+      <div class="input-group input-group-text font-14 bg-white" id="reportrange" wire:ignore>
+        <i class="mdi mdi-calendar-range font-14 d-flex me-2"></i>
+        <span class=""></span>
+      </div>
+    </div>
+
+    @include('livewire.includes.datatable-search')
+  </div>
+
+  @include('livewire.includes.datatable-pagecount')
+
+  <div class="table-responsive">
+    <table class="table table-centered mb-0">
+      @php
+        $canEdit = hasUserPermission('admin.promotion.edit');
+        $canDelete = hasUserPermission('admin.promotion.delete');
+      @endphp
+      <thead>
+        <tr>
+          {{-- <th class="sl-col">
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input {{ $canDelete ? '' : 'disabled-link' }}"
+                id="{{ $canDelete ? 'maincheck' : '' }}">
+              <label class="form-check-label" for="customCheck1"></label>
+            </div>
+          </th> --}}
+          <th>Sl.</th>
+          <th>Action</th>
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'promotion_mode',
+              'displayName' => 'Promotion Mode',
+          ])
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'name',
+              'displayName' => 'Promotion Name',
+          ])
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'promotion_start_from',
+              'displayName' => 'Promotion Start From',
+          ])
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'promotion_end_to',
+              'displayName' => 'Promotion End To',
+          ])
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'status',
+              'displayName' => 'Status',
+          ])
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'created_by',
+              'displayName' => 'Created By',
+          ])
+          @include('livewire.includes.datatable-header-sort', [
+              'colName' => 'updated_by',
+              'displayName' => 'Updated By',
+          ])
+        </tr>
+      </thead>
+      <tbody>
+        @if ($promotions->count() > 0)
+          @foreach ($promotions as $promotion)
+            @php $hashedID = Hashids::encode($promotion->id); @endphp
+            <tr id="row_{{ $hashedID }}">
+              {{-- <td>
+                <div class="form-check">
+                  <input type="checkbox" class="form-check-input {{ $canDelete ? '' : 'disabled-link' }}"
+                    {!! $canDelete ? 'id="check_' . $hashedID . '"' : '' !!}>
+                </div>
+              </td> --}}
+              <td>{{ $serialNumber++ }}</td>
+              <td class="table-action">
+                <div class="d-flex">
+                  <a href="{{ $canEdit ? route('admin.promotion.edit', $hashedID) : 'javascript:void(0);' }}"
+                    class="action-icon text-info {{ $canEdit ? '' : 'disabled-link' }}" title="Edit">
+                    <i class="ri-pencil-line"></i>
+                  </a>
+                  {{-- <a href="javascript:void(0);" class="action-icon text-danger {{ $canDelete ? '' : 'disabled-link' }}"
+                    title="Remove" onclick="{{ $canDelete ? 'deleteRecord(' . json_encode($hashedID) . ')' : '' }}">
+                    <i class="ri-delete-bin-line"></i>
+                  </a> --}}
+                </div>
+              </td>
+              <td>{{ $promotion->promotion_mode == 1 ? 'Product Wise' : 'Category Wise' }}</td>
+              <td>{{ ucfirst($promotion->name) }}</td>
+              <td>{{ convertDateTimeHours($promotion->promotion_start_from) }}</td>
+              <td>{{ convertDateTimeHours($promotion->promotion_end_to) }}</td>
+              <td>
+                <span class="badge badge-{{ $promotion->status ? 'success' : 'danger' }}-lighten"
+                  title="{{ $promotion->status ? 'Active' : 'Inactive' }}" id="status_{{ $hashedID }}"
+                  {{ $canEdit ? 'role=button tabindex=0 onclick=changeStatus("' . $hashedID . '")' : '' }}>
+                  {{ $promotion->status ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="updatedby">
+                <div class="thumb">
+                  <span class="account-user-avatar">
+                    <img src="{{ userImageById('admin', $promotion->created_by)['thumbnail'] }}" alt="user-image"
+                      width="32" class="rounded-circle">
+                  </span>
+                  <div class="inf">
+                    {{ userNameById('admin', $promotion->created_by) ?? 'N/A' }}
+                    <span>{{ convertDateTimeHours($promotion->created_at) }}</span>
+                  </div>
+                </div>
+              </td>
+              <td class="updatedby">
+                <div class="thumb">
+                  <span class="account-user-avatar">
+                    <img src="{{ userImageById('admin', $promotion->updated_by)['thumbnail'] }}" alt="user-image"
+                      width="32" class="rounded-circle">
+                  </span>
+                  <div class="inf">
+                    {{ userNameById('admin', $promotion->updated_by) ?? 'N/A' }}
+                    <span>{{ convertDateTimeHours($promotion->updated_at) }}</span>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          @endforeach
+        @else
+          <tr>
+            <td colspan="13" class="text-center">
+              <div class="alert alert-danger text-danger">No Promotions Found</div>
+            </td>
+          </tr>
+        @endif
+      </tbody>
+    </table>
+  </div>
+  {{ $promotions->links('vendor.livewire.bootstrap') }}
+</div>
+
+@push('component-scripts')
+  <script>
+    function changeStatus(id) {
+      let url = `{{ route('admin.promotion.edit.status', ':id') }}`.replace(':id', id);
+      changeStatusAjax(url, id);
+    }
+
+    function deleteRecord(id) {
+      let url = `{{ route('admin.coupons.delete', ':id') }}`.replace(':id', id);
+      deleteAjax(url);
+    }
+
+    $("#deleteBtn").on("click", function() {
+      deleteMultipleAjax(`{{ route('admin.coupons.delete.multiple') }}`);
+    });
+  </script>
+@endpush

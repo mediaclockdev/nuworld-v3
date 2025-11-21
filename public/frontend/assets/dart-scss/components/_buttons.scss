@@ -1,0 +1,19 @@
+@use './../abstracts/mixin' as *;
+@use './../project/colors' as *;
+@use './../project/typo' as *;
+
+.action_remove, .action_savelater {
+    text-decoration: none;
+    @include transition();
+    &:hover {
+        color: color(primary);
+        text-decoration: none;
+    }
+}
+.action_addreview {
+    text-decoration: none;
+    @include transition();
+    &:hover {
+        text-decoration: none;
+    }
+}

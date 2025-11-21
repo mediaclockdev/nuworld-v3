@@ -1,0 +1,175 @@
+@use './mixin' as *;
+@use './../project/colors' as *;
+@use './../project/typo' as *;
+
+
+.text-lowercase {
+    text-transform: lowercase;
+}
+
+.text-uppercase {
+    text-transform: uppercase;
+}
+
+.text-capitalize {
+    text-transform: capitalize;
+}
+
+.w-100vw {
+    width: 100vw;
+}
+
+.w-100 {
+    width: 100%;
+    flex: 0 0 100%;
+}
+
+.w-50 {
+    width: 50%;
+}
+
+.w-1\/2 {
+    width: 48% !important;
+    flex: 0 0 48% !important;
+}
+
+.fullH {
+    @include fullH();
+}
+
+.imageFit {
+    @include imageFit();
+}
+.imageTrans {
+    @include imageTrans();
+}
+.minH {
+    @include minH();
+}
+
+.maxH {
+    @include maxH();
+}
+
+.halfH {
+    @include halfH();
+}
+
+.halfminH {
+    @include halfminH();
+}
+
+.halfmaxH {
+    @include halfmaxH();
+}
+
+.fullScreen {
+    width: 100%;
+    @include fullH();
+}
+
+video.fullScreen,
+img.fullScreen {
+    object-fit: cover;
+    object-position: center;
+}
+
+
+// BORDER
+.b-0 {
+    border: none !important;
+}
+
+
+.ar-16\/9 {
+    @include aspect-ratio('16:9');
+}
+
+.ar-4\/3 {
+    @include aspect-ratio('4:3');
+}
+
+.ar-3\/4 {
+    @include aspect-ratio('3:4');
+}
+
+.imgG-on-hvr-imgN {
+
+    picture,
+    filter {
+        @include imgG();
+    }
+
+    &:hover,
+    &:focus {
+
+        picture,
+        filter {
+            @include imgN();
+        }
+    }
+}
+
+.img-with-radius {
+    border-radius: 4px;
+}
+[class*="flow-root"] {
+    &>p {
+        transform: translateY(-0.3em);
+    }
+
+    &>.dashed__list {
+        transform: translateY(-0.3em);
+    }
+}
+
+.flow-rootx4>*+* {
+    margin-top: 0.15rem;
+}
+
+.flow-rootx3>*+* {
+    margin-top: 0.25rem;
+}
+
+.flow-rootx2>*+* {
+    margin-top: 0.5rem;
+}
+
+.flow-rootx>*+* {
+    margin-top: 0.75rem;
+}
+
+.flow-root>*+* {
+    margin-top: 1rem;
+}
+
+.flow-rootX>*+* {
+    margin-top: 1.25rem;
+    @media(max-width: 1600px) {
+        margin-top: 1.125rem;
+    }
+}
+
+.flow-rootX2>*+* {
+    margin-top: 2rem;
+
+    @media(max-width: 1600px) {
+        margin-top: 1.8rem;
+    }
+}
+
+.flow-rootX3>*+* {
+    margin-top: 3rem;
+
+    @media(max-width: 1600px) {
+        margin-top: 2.7rem;
+    }
+}
+
+.flow-rootX4>*+* {
+    margin-top: 4rem;
+
+    @media(max-width: 1600px) {
+        margin-top: 3.6rem;
+    }
+}

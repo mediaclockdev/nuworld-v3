@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "formulahendry.auto-close-tag",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-complete-tag",
+    "dbaeumer.vscode-eslint",
+    "bmewburn.vscode-intelephense-client",
+    "codingyu.laravel-goto-view",
+    "onecentlin.laravel-blade",
+    "streetsidesoftware.code-spell-checker",
+    "shufo.vscode-blade-formatter",
+    "m4tr1ck.livewire-goto-updated-3",
+    "codeium.codeium"
+  ]
+}

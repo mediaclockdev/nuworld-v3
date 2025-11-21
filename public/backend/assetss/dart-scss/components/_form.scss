@@ -1,0 +1,239 @@
+@use './../project/colors' as *;
+@use './../abstracts/mixin' as *;
+
+.form-style {
+  --frmBorder: #868686;
+  --frmFieldClr: #2c2c2c;
+  --initHeight: 8em;
+  --borderRadius: 6rem;
+
+  &.white__theme {
+    --frmFocusBorder: #fff;
+    --frmErrClr: #fdd008;
+  }
+
+  font-size: 0.88rem;
+
+  .form-element {
+    position: relative;
+  }
+
+  .form-label {
+    position: absolute;
+    top: 1.4em;
+    left: 1.3em;
+    font-size: 98%;
+    pointer-events: none;
+    line-height: normal;
+    will-change: top, font-size;
+    transition: 0.2s ease;
+  }
+
+  .form-field {
+    width: 100%;
+    background-color: var(--frmFieldBgClr, transparent);
+    color: var(--frmFieldClr);
+    font-size: inherit;
+    border-radius: inherit;
+    line-height: normal;
+    resize: none;
+    border: 2px solid var(--frmBorder);
+    border-radius: var(--borderRadius);
+
+    &:not(.with-placeholder) {
+      padding: 2em var(--padding-right, 1.2em) .6em 1.2em;
+    }
+
+    &.with-placeholder {
+      padding: 1.2em var(--padding-right, 1.2em) 1.2em 1.2em;
+    }
+
+    &:focus {
+      border-color: var(--frmFocusBorder, #000);
+    }
+  }
+
+  .form-select {
+    &::after {
+      content: '';
+      width: 8px;
+      height: 8px;
+      position: absolute;
+      right: 1rem;
+      top: 38%;
+      transform: rotate(45deg);
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      pointer-events: none;
+    }
+
+    &.focus {
+      .form-field {
+        border: 2px solid transparent;
+        color: white;
+      }
+
+      &::after {
+        content: '';
+        border-right: 2px solid white;
+        border-bottom: 2px solid white;
+      }
+
+      .form-label {
+        color: white;
+      }
+    }
+  }
+
+  // CHECK BOX
+  .form-checkbox {
+    label {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.8em;
+      cursor: pointer;
+      line-height: normal;
+    }
+
+    .checkmark {
+      height: 1.2em;
+      width: 1.2em;
+      background-color: transparent;
+      border-radius: var(--frmRadius, 0.2em);
+      border: 1px solid var(--frmBorderClr, #9e9e9e);
+      position: relative;
+
+      &::after {
+        content: "";
+        position: absolute;
+        top: .21em;
+        left: 0.19em;
+        border-left: 2px solid transparent;
+        border-bottom: 2px solid transparent;
+        transform: rotate(-45deg);
+      }
+    }
+
+    input {
+      position: absolute;
+      opacity: 0;
+      height: 0;
+      width: 0;
+
+      &:checked~.checkmark {
+        animation: shrink-bounce 200ms cubic-bezier(.4, .0, .23, 1);
+        background-color: color(txt);
+        border-color: color(txt);
+
+        &::after {
+          width: 0.7em;
+          height: 0.4em;
+          border-color: color(txt);
+        }
+      }
+    }
+  }
+}
+
+.form-style-2 {
+  --frmBorder: #cdcdcd;
+  --frmFieldClr: #323232;
+  --initHeight: 8em;
+
+  &.white__theme {
+    --frmFocusBorder: #fff;
+  }
+
+  font-size: 0.88rem;
+
+  .form-label {
+    position: absolute;
+    top: 1.2em;
+    left: 2.4em;
+    @include clamp('font-size', 16, 18);
+    pointer-events: none;
+    line-height: normal;
+    will-change: top, font-size;
+    transition: 0.2s ease;
+  }
+
+  .form-field {
+    width: 100%;
+    background-color: var(--frmFieldBgClr, transparent);
+    color: var(--frmFieldClr);
+    font-size: inherit;
+    border-radius: 5rem;
+    line-height: normal;
+    resize: none;
+    border: 2px solid var(--frmBorder);
+
+    &:not(.with-placeholder) {
+      padding: 2em var(--padding-right, 4.2em) .6em 2em;
+    }
+
+    &:focus {
+      border-color: var(--frmFocusBorder, #000);
+    }
+  }
+}
+
+.form-style {
+  .form-icon {
+    margin-top: 0.75em;
+    margin-right: 0.5em;
+  }
+}
+
+
+// form autofill
+.form-style input:-webkit-autofill,
+.form-style input:-webkit-autofill:hover,
+.form-style input:-webkit-autofill:focus,
+.form-style textarea:-webkit-autofill,
+.form-style textarea:-webkit-autofill:hover,
+.form-style textarea:-webkit-autofill:focus,
+.form-style select:-webkit-autofill,
+.form-style select:-webkit-autofill:hover,
+.form-style select:-webkit-autofill:focus {
+  opacity: 1 !important;
+  transition: background-color 50000s ease-in-out 0s;
+  -webkit-transition: background-color 50000s ease-in-out 0s;
+  -webkit-text-fill-color: var(--frmFieldClr) !important;
+
+  &~.form-label {
+    top: 0.72em;
+    font-size: 13px;
+    opacity: 0.7 !important;
+  }
+}
+
+// remove safari autofill human icon
+.form-style input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+
+// <input type="file" multiple accept=".jpg, .png" >
+
+
+i.error,
+div.error {
+  width: 100%;
+  flex-basis: 100%;
+  display: block;
+  font-style: normal;
+  font-size: 80%;
+  color: var(--frmErrClr, #{color(error)});
+  top: 103%;
+  left: 0;
+  position: absolute;
+}
+
+.iti {
+  width: 100%;
+  border-radius: inherit;
+}
