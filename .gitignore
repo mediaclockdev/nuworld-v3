@@ -6,7 +6,6 @@
 /storage/*.key
 /storage/pail
 /vendor
-/routes/livewire.php
 storage
 stubs
 .env
