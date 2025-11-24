@@ -3,8 +3,7 @@
 namespace Database\Seeders\Fashion;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\{Storage, File};
-use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\{Storage, File, DB, Hash};
 
 class CustomBannerSeeder extends Seeder
 {
@@ -17,6 +16,63 @@ class CustomBannerSeeder extends Seeder
     $this->uploadBannerImages();
   }
 
+  /**
+   * Ensure admins that your seeder references exist, create minimal admin rows if they don't.
+   * Returns a mapping of original referenced ids => actual admin ids in DB.
+   */
+  private function ensureRequiredAdmins(array $requiredIds): array
+  {
+    $map = [];
+
+    foreach ($requiredIds as $origId) {
+      // If admin with that id exists, keep it
+      $exists = DB::table('admins')->where('id', $origId)->exists();
+      if ($exists) {
+        $map[$origId] = $origId;
+        continue;
+      }
+
+      // Try to insert a minimal admin row with that id.
+      // Choose a unique email to avoid collisions.
+      $email = "seed-admin-{$origId}@" . env('APP_DOMAIN', 'example.com');
+      $now = now();
+
+      // If email already exists for a different id, insert without specifying id and capture generated id.
+      $emailExists = DB::table('admins')->where('email', $email)->exists();
+      if ($emailExists) {
+        $newId = DB::table('admins')->where('email', $email)->value('id');
+        $map[$origId] = $newId;
+        continue;
+      }
+
+      try {
+        // Attempt insert with explicit id (works if no PK collision)
+        DB::table('admins')->insert([
+          'id' => $origId,
+          'name' => "Seed Admin {$origId}",
+          'email' => $email,
+          // password hash for 'secret123' (change if you prefer)
+          'password' => Hash::make('secret123'),
+          'created_at' => $now,
+          'updated_at' => $now,
+        ]);
+        $map[$origId] = $origId;
+      } catch (\Exception $e) {
+        // If explicit id insert fails (e.g. auto-increment constraint), insert without id and use generated id
+        $newId = DB::table('admins')->insertGetId([
+          'name' => "Seed Admin {$origId}",
+          'email' => $email,
+          'password' => Hash::make('secret123'),
+          'created_at' => $now,
+          'updated_at' => $now,
+        ]);
+        $map[$origId] = $newId;
+      }
+    }
+
+    return $map;
+  }
+
   private function seedBanners(): void
   {
     // Fetch a small pool of product variant SKUs
@@ -26,8 +82,6 @@ class CustomBannerSeeder extends Seeder
     $skus = array_values($skus); // reindex
 
     // Decide how many indexes your banner methods might reference.
-    // You reference up to index 12 in hover cards and up to 9 in hero banners in your original arrays.
-    // We'll pad up to index 12 (i.e. 13 elements).
     $requiredCount = 13;
 
     if (count($skus) < $requiredCount) {
@@ -51,19 +105,43 @@ class CustomBannerSeeder extends Seeder
       $this->getAdditionalBanners($url, $skus)
     );
 
+    // Collect any distinct created_by/updated_by ids referenced in banner definitions
+    $referencedAdminIds = [];
+    foreach ($banners as $b) {
+      if (!empty($b['created_by'])) {
+        $referencedAdminIds[] = $b['created_by'];
+      }
+      if (!empty($b['updated_by'])) {
+        $referencedAdminIds[] = $b['updated_by'];
+      }
+    }
+    $referencedAdminIds = array_values(array_unique($referencedAdminIds));
+
+    // Ensure those admins exist and get mapping: originalId => actualId in DB
+    $adminIdMap = $this->ensureRequiredAdmins($referencedAdminIds);
+
+    // Insert banners mapping created_by/updated_by to actual IDs (or null)
     foreach ($banners as $banner) {
+      $createdBy = isset($banner['created_by']) && $banner['created_by'] !== null
+        ? ($adminIdMap[$banner['created_by']] ?? null)
+        : null;
+
+      $updatedBy = isset($banner['updated_by']) && $banner['updated_by'] !== null
+        ? ($adminIdMap[$banner['updated_by']] ?? null)
+        : null;
+
       DB::table('custom_banners')->insert([
         'id' => $banner['id'],
         'title' => $banner['title'],
         'position' => $banner['position'],
         'settings' => json_encode($banner['settings']),
-        'custom_order' => $banner['custom_order'],
-        'status' => 1,
-        'created_at' => $now,
-        'updated_at' => $now,
+        'custom_order' => $banner['custom_order'] ?? 0,
+        'status' => $banner['status'] ?? 1,
+        'created_at' => $banner['created_at'] ?? $now,
+        'updated_at' => $banner['updated_at'] ?? $now,
         'deleted_at' => $banner['deleted_at'] ?? null,
-        'created_by' => $banner['created_by'] ?? null,
-        'updated_by' => $banner['updated_by'] ?? null,
+        'created_by' => $createdBy,
+        'updated_by' => $updatedBy,
       ]);
     }
   }
@@ -159,7 +237,6 @@ class CustomBannerSeeder extends Seeder
       ['id' => 44, 'title' => '', 'position' => 'app_category_page_checkout_collections', 'settings' => ['image' => 'app_category_page_checkout_collections2.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
       ['id' => 45, 'title' => '', 'position' => 'app_category_page_checkout_collections', 'settings' => ['image' => 'app_category_page_checkout_collections3.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
       ['id' => 46, 'title' => '', 'position' => 'four_hover_card_title', 'settings' => ['title' => 'Contemporary'], 'custom_order' => 1],
-
       ['id' => 47, 'title' => '', 'position' => 'app_home_landing_inner_banner', 'settings' => ['image' => 'home_sub_banner_1.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5],
       ['id' => 48, 'title' => '', 'position' => 'app_home_landing_inner_banner', 'settings' => ['image' => 'home_sub_banner_2.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.google.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 1],
       ['id' => 49, 'title' => '', 'position' => 'app_home_landing_inner_banner', 'settings' => ['image' => 'home_sub_banner_3.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 2],
