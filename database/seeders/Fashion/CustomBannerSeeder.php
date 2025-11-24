@@ -3,7 +3,8 @@
 namespace Database\Seeders\Fashion;
 
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\{Storage, File, DB, Hash};
+use Illuminate\Support\Facades\{Storage, File};
+use Illuminate\Support\Facades\DB;
 
 class CustomBannerSeeder extends Seeder
 {
@@ -16,63 +17,6 @@ class CustomBannerSeeder extends Seeder
     $this->uploadBannerImages();
   }
 
-  /**
-   * Ensure admins that your seeder references exist, create minimal admin rows if they don't.
-   * Returns a mapping of original referenced ids => actual admin ids in DB.
-   */
-  private function ensureRequiredAdmins(array $requiredIds): array
-  {
-    $map = [];
-
-    foreach ($requiredIds as $origId) {
-      // If admin with that id exists, keep it
-      $exists = DB::table('admins')->where('id', $origId)->exists();
-      if ($exists) {
-        $map[$origId] = $origId;
-        continue;
-      }
-
-      // Try to insert a minimal admin row with that id.
-      // Choose a unique email to avoid collisions.
-      $email = "seed-admin-{$origId}@" . env('APP_DOMAIN', 'example.com');
-      $now = now();
-
-      // If email already exists for a different id, insert without specifying id and capture generated id.
-      $emailExists = DB::table('admins')->where('email', $email)->exists();
-      if ($emailExists) {
-        $newId = DB::table('admins')->where('email', $email)->value('id');
-        $map[$origId] = $newId;
-        continue;
-      }
-
-      try {
-        // Attempt insert with explicit id (works if no PK collision)
-        DB::table('admins')->insert([
-          'id' => $origId,
-          'name' => "Seed Admin {$origId}",
-          'email' => $email,
-          // password hash for 'secret123' (change if you prefer)
-          'password' => Hash::make('secret123'),
-          'created_at' => $now,
-          'updated_at' => $now,
-        ]);
-        $map[$origId] = $origId;
-      } catch (\Exception $e) {
-        // If explicit id insert fails (e.g. auto-increment constraint), insert without id and use generated id
-        $newId = DB::table('admins')->insertGetId([
-          'name' => "Seed Admin {$origId}",
-          'email' => $email,
-          'password' => Hash::make('secret123'),
-          'created_at' => $now,
-          'updated_at' => $now,
-        ]);
-        $map[$origId] = $newId;
-      }
-    }
-
-    return $map;
-  }
-
   private function seedBanners(): void
   {
     // Fetch a small pool of product variant SKUs
@@ -82,6 +26,8 @@ class CustomBannerSeeder extends Seeder
     $skus = array_values($skus); // reindex
 
     // Decide how many indexes your banner methods might reference.
+    // You reference up to index 12 in hover cards and up to 9 in hero banners in your original arrays.
+    // We'll pad up to index 12 (i.e. 13 elements).
     $requiredCount = 13;
 
     if (count($skus) < $requiredCount) {
@@ -105,43 +51,19 @@ class CustomBannerSeeder extends Seeder
       $this->getAdditionalBanners($url, $skus)
     );
 
-    // Collect any distinct created_by/updated_by ids referenced in banner definitions
-    $referencedAdminIds = [];
-    foreach ($banners as $b) {
-      if (!empty($b['created_by'])) {
-        $referencedAdminIds[] = $b['created_by'];
-      }
-      if (!empty($b['updated_by'])) {
-        $referencedAdminIds[] = $b['updated_by'];
-      }
-    }
-    $referencedAdminIds = array_values(array_unique($referencedAdminIds));
-
-    // Ensure those admins exist and get mapping: originalId => actualId in DB
-    $adminIdMap = $this->ensureRequiredAdmins($referencedAdminIds);
-
-    // Insert banners mapping created_by/updated_by to actual IDs (or null)
     foreach ($banners as $banner) {
-      $createdBy = isset($banner['created_by']) && $banner['created_by'] !== null
-        ? ($adminIdMap[$banner['created_by']] ?? null)
-        : null;
-
-      $updatedBy = isset($banner['updated_by']) && $banner['updated_by'] !== null
-        ? ($adminIdMap[$banner['updated_by']] ?? null)
-        : null;
-
       DB::table('custom_banners')->insert([
         'id' => $banner['id'],
         'title' => $banner['title'],
         'position' => $banner['position'],
         'settings' => json_encode($banner['settings']),
-        'custom_order' => $banner['custom_order'] ?? 0,
-        'status' => $banner['status'] ?? 1,
-        'created_at' => $banner['created_at'] ?? $now,
-        'updated_at' => $banner['updated_at'] ?? $now,
+        'custom_order' => $banner['custom_order'],
+        'status' => 1,
+        'created_at' => $now,
+        'updated_at' => $now,
         'deleted_at' => $banner['deleted_at'] ?? null,
-        'created_by' => $createdBy,
-        'updated_by' => $updatedBy,
+        'created_by' => $banner['created_by'] ?? null,
+        'updated_by' => $banner['updated_by'] ?? null,
       ]);
     }
   }
@@ -212,7 +134,38 @@ class CustomBannerSeeder extends Seeder
     return $banners;
   }
 
+  private function getAdditionalBanners(string $url, array $skus): array
+  {
+    return [
+      ['id' => 25, 'title' => 'Furniture Contemporary 1', 'position' => 'four_hover_cards', 'settings' => ['image' => 'contemporary1.webp', 'content' => '<p>Luxe Comfort Haven</p>', 'alt_text' => 'alt text', 'btn_text' => 'View', 'btn_color' => '#000000', 'hyper_link' => null, 'default_image_size' => null], 'custom_order' => 30],
+      ['id' => 26, 'title' => 'Furniture Contemporary 2', 'position' => 'four_hover_cards', 'settings' => ['image' => 'contemporary2.webp', 'content' => '<p>Luxe Comfort Haven</p>', 'alt_text' => 'alt text', 'btn_text' => 'View', 'btn_color' => '#000000', 'hyper_link' => null, 'default_image_size' => null], 'custom_order' => 31],
+      ['id' => 27, 'title' => 'Furniture Contemporary 3', 'position' => 'four_hover_cards', 'settings' => ['image' => 'contemporary4.webp', 'content' => '<p>Luxe Comfort Haven</p>', 'alt_text' => 'alt text', 'btn_text' => null, 'btn_color' => '#000000', 'hyper_link' => null, 'default_image_size' => null], 'custom_order' => 32],
+      ['id' => 28, 'title' => 'Furniture Contemporary 4', 'position' => 'four_hover_cards', 'settings' => ['image' => 'contemporary5.webp', 'content' => '<p>Luxe Comfort Haven</p>', 'alt_text' => 'alt text', 'btn_text' => 'View', 'btn_color' => '#000000', 'hyper_link' => null, 'default_image_size' => null], 'custom_order' => 33],
+      ['id' => 29, 'title' => 'Mayuri Made Beautiful with Functional Elegance', 'position' => 'sale_block_fullwidth', 'settings' => ['image' => 'sales_block_img.webp', 'content' => '<div class="blk"><h2 class="fw-normal c--whitec font80 m-0">SALE</h2><h4 class="fw-normal c--whitec font25">Up to 50% Off</h4></div>', 'alt_text' => null, 'btn_text' => 'View Collections', 'btn_color' => '#000000', 'hyper_link' => "$url/categories", 'default_image_size' => null], 'custom_order' => 34],
+      ['id' => 30, 'title' => 'Keep It Flowing', 'position' => 'flow_banner', 'settings' => ['image' => 'furniture__keepfrowing.webp', 'content' => '<p><span>Keep</span> <span>It</span> <span>Flowing</span></p>', 'alt_text' => 'alt text', 'default_image_size' => null], 'custom_order' => 35],
+      ['id' => 31, 'title' => 'Subscribe', 'position' => 'subscribe_banner', 'settings' => ['content' => '<p>Subscribe now and save up to 15% on selected orders! Find furniture that perfectly suits your style.</p>'], 'custom_order' => 36],
+      ['id' => 32, 'title' => 'Shop Page', 'position' => 'shop_page_banner', 'settings' => ['image' => 'product-hero.webp', 'default_image_size' => null, 'alt_text' => null], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 33, 'title' => 'Crafted with Innovation', 'position' => 'category_page_banner', 'settings' => ['image' => 'category_hero.webp', 'default_image_size' => null, 'alt_text' => null, 'content' => '<p class="act font25" data-parallax-strength-vertical="-2.5" data-parallax-height="-2.5"><span data-parallax-target="">Our sofas are durable, simple to assemble,</span><br><span data-parallax-target="">and adaptable to your evolving needs.</span></p>'], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 34, 'title' => 'Hotdeal 1', 'position' => 'hot_deals_category_banner', 'settings' => ['image' => 'hot_deals1.webp', 'default_image_size' => null, 'alt_text' => '#', 'hyper_link' => 'https://www.google.com'], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 35, 'title' => 'Hotdeal 2', 'position' => 'hot_deals_category_banner', 'settings' => ['image' => 'hot_deals2.webp', 'default_image_size' => null, 'alt_text' => null, 'hyper_link' => null], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 36, 'title' => 'Hotdeal 3', 'position' => 'hot_deals_category_banner', 'settings' => ['image' => 'hot_deals3.webp', 'default_image_size' => null, 'alt_text' => null, 'hyper_link' => 'https://www.google.com'], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 37, 'title' => 'Hotdeal 4', 'position' => 'hot_deals_category_banner', 'settings' => ['image' => 'hot_deals4.webp', 'default_image_size' => null, 'alt_text' => null, 'hyper_link' => null], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 38, 'title' => 'Mayuri Made Beautiful with Functional Elegance', 'position' => 'category_sale_block', 'settings' => ['image' => 'sales_block_img2.webp', 'default_image_size' => null, 'alt_text' => null, 'content' => '<div class="blk"><h2 class="fw-normal c--whitec font80 m-0">SALE</h2><h4 class="fw-normal c--whitec font25">Up to 50% Off</h4></div>', 'btn_text' => 'View Collections', 'btn_color' => '#000000', 'hyper_link' => "$url/categories"], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 39, 'title' => 'Luxury', 'position' => 'login_page_banner', 'settings' => ['image' => 'signup_popup_thumb.webp', 'default_image_size' => null, 'alt_text' => null, 'content' => '<p>Discover 30k+ varieties</p>'], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 40, 'title' => 'Ingenious Design Meets Lasting Durability', 'position' => 'category_page_headline_banner', 'settings' => [], 'custom_order' => 6, 'created_by' => 6, 'updated_by' => 6],
+      ['id' => 41, 'title' => '', 'position' => 'app_splash_logo', 'settings' => ['image' => 'app_splash_logo.webp', 'alt_text' => 'alt', 'bg_color' => '#2fabca', 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
+      ['id' => 42, 'title' => 'App Journey Begins', 'position' => 'app_journey_screen', 'settings' => ['image' => 'app_journey_screen.webp', 'alt_text' => 'alt', 'btn_text' => 'Explore Now', 'btn_color' => '#000000', 'show_button' => true, 'skip_btn_text' => 'Skip', 'skip_btn_color' => '#000000', 'show_skip_button' => true, 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
+      ['id' => 43, 'title' => '', 'position' => 'app_category_page_checkout_collections', 'settings' => ['image' => 'app_category_page_checkout_collections1.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
+      ['id' => 44, 'title' => '', 'position' => 'app_category_page_checkout_collections', 'settings' => ['image' => 'app_category_page_checkout_collections2.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
+      ['id' => 45, 'title' => '', 'position' => 'app_category_page_checkout_collections', 'settings' => ['image' => 'app_category_page_checkout_collections3.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5, 'created_by' => 5, 'updated_by' => 5],
+      ['id' => 46, 'title' => '', 'position' => 'four_hover_card_title', 'settings' => ['title' => 'Contemporary'], 'custom_order' => 1],
 
+      ['id' => 47, 'title' => '', 'position' => 'app_home_landing_inner_banner', 'settings' => ['image' => 'home_sub_banner_1.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 5],
+      ['id' => 48, 'title' => '', 'position' => 'app_home_landing_inner_banner', 'settings' => ['image' => 'home_sub_banner_2.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.google.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 1],
+      ['id' => 49, 'title' => '', 'position' => 'app_home_landing_inner_banner', 'settings' => ['image' => 'home_sub_banner_3.webp', 'alt_text' => 'alt text', 'hyper_link' => 'https://www.yahoo.com/', 'banner_type' => null, 'default_image_size' => null], 'custom_order' => 2],
+      ['id' => 50, 'title' => '', 'position' => 'home_page_top_category_banner', 'settings' => ['options' => [3, 6, 9, 20], 'banner_type' => null], 'custom_order' => 6, 'created_at' => null, 'updated_at' => null, 'deleted_at' => null],
+    ];
+  }
 
 
   private function uploadBannerImages()
