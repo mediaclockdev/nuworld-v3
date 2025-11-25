@@ -20,6 +20,7 @@ return new class extends Migration
       $table->string('phone', 20)->unique()->nullable();
       $table->timestamp('email_verified_at')->nullable();
       $table->string('password', 255);
+      $table->string('fcm_token')->nullable();
       $table->integer('status')->default(1)->comment('0 = Pending, 1 = Active, 2 = Revoked');
       $table->string('avatar', 255)->nullable();
       $table->tinyInteger('gender')->nullable()->comment('1=>Male', '2=>Female', '3=>Others');
