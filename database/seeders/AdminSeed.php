@@ -23,7 +23,7 @@ class AdminSeed extends Seeder
         'phone' => '9433857585',
       ],
       // others are minimal seed admins
-      2 => ['first_name' => 'Seed', 'last_name' => 'Admin2', 'email' => 'seed-admin-2@example.com'],
+      2 => ['first_name' => 'Ritu', 'last_name' => 'Admin', 'email' => 'ritu@mediaclock.com.au'],
       3 => ['first_name' => 'Seed', 'last_name' => 'Admin3', 'email' => 'seed-admin-3@example.com'],
       4 => ['first_name' => 'Seed', 'last_name' => 'Admin4', 'email' => 'seed-admin-4@example.com'],
       5 => ['first_name' => 'Seed', 'last_name' => 'Admin5', 'email' => 'seed-admin-5@example.com'],
