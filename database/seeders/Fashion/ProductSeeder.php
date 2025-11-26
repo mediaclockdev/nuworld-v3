@@ -3,23 +3,32 @@
 namespace Database\Seeders\Fashion;
 
 use Illuminate\Database\Seeder;
-use App\Models\{Product, ProductCategory, ProductVariant, ProductVariantImages, ProductVariantAttribute, Inventory, MediaGallery, ProductAttribute, ProductAttributeValue, ProductFilter};
+use App\Models\{
+  Product,
+  ProductCategory,
+  ProductVariant,
+  ProductVariantImages,
+  ProductVariantAttribute,
+  Inventory,
+  MediaGallery,
+  ProductAttribute,
+  ProductAttributeValue,
+  ProductFilter
+};
 use App\Traits\Seeders\FashionCategoryData;
 use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
-
   public function __construct(protected FashionCategoryData $categoryData) {}
+
   /**
    * Run the database seeds.
    */
   public function run(): void
   {
-    $levels               = $this->categoryData->getCategoryLevels();
-    $parentCategories     = $levels['parentCategories'];
-    $childCategories      = $levels['childCategories'];
-    $grandchildCategories = $levels['grandchildCategories'];
+    // Use nested categories to avoid collisions between same-named children under different parents
+    $nested = $this->categoryData->getNestedCategories();
 
     // <-- kept exactly as you requested -->
     $colorImages = [
@@ -60,18 +69,20 @@ class ProductSeeder extends Seeder
       }
     }
 
-    foreach ($parentCategories as $parentIndex => $parentTitle) {
+    // Iterate nested structure: Parent -> Child -> Grandchildren
+    foreach ($nested as $parentTitle => $childrenMap) {
       $parent = ProductCategory::where('title', $parentTitle)->first();
       if (!$parent) continue;
 
-      foreach ($childCategories[$parentTitle] as $c => $childTitle) {
+      foreach ($childrenMap as $childTitle => $grandchildren) {
         $child = ProductCategory::where('title', $childTitle)->where('parent_id', $parent->id)->first();
         if (!$child) continue;
 
-        foreach ($grandchildCategories[$childTitle] as $g => $grandTitle) {
+        foreach ($grandchildren as $g => $grandTitle) {
           $grandchild = ProductCategory::where('title', $grandTitle)->where('parent_id', $child->id)->first();
           if (!$grandchild) continue;
 
+          // Create 2 products per grandchild (as in your original seeder)
           for ($p = 1; $p <= 2; $p++) {
             // ---- Fashion-Wireframes product content (replaces furniture product text) ----
             $productName = "Fashion Wireframe - {$grandchild->title} Style {$p}";
@@ -82,33 +93,33 @@ class ProductSeeder extends Seeder
               'type' => 'variable',
               'status' => 1,
               'product_details' => "
-                <div class=\"d-grid grid-2\">
-                    <div>
-                        <h4 class=\"font18 c--blackc fw-medium m-0\">Brand</h4>
-                        <p class=\"c--gry font18 m-0\">Mayuri Fashion</p>
-                    </div>
-                    <div>
-                        <h4 class=\"font18 c--blackc fw-medium m-0\">Category</h4>
-                        <p class=\"c--gry font18 m-0\">{$grandchild->title}</p>
-                    </div>
-                    <div>
-                        <h4 class=\"font18 c--blackc fw-medium m-0\">Style</h4>
-                        <p class=\"c--gry font18 m-0\">Style {$p}</p>
-                    </div>
-                    <div>
-                        <h4 class=\"font18 c--blackc fw-medium m-0\">Return Policy</h4>
-                        <p class=\"c--gry font18 m-0\">7-day return policy</p>
-                    </div>
-                    <div>
-                        <h4 class=\"font18 c--blackc fw-medium m-0\">Fit</h4>
-                        <p class=\"c--gry font18 m-0\">Regular Fit</p>
-                    </div>
-                    <div>
-                        <h4 class=\"font18 c--blackc fw-medium m-0\">Made In</h4>
-                        <p class=\"c--gry font18 m-0\">India</p>
-                    </div>
-                </div>
-            ",
+                                <div class=\"d-grid grid-2\">
+                                    <div>
+                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Brand</h4>
+                                        <p class=\"c--gry font18 m-0\">Mayuri Fashion</p>
+                                    </div>
+                                    <div>
+                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Category</h4>
+                                        <p class=\"c--gry font18 m-0\">{$grandchild->title}</p>
+                                    </div>
+                                    <div>
+                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Style</h4>
+                                        <p class=\"c--gry font18 m-0\">Style {$p}</p>
+                                    </div>
+                                    <div>
+                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Return Policy</h4>
+                                        <p class=\"c--gry font18 m-0\">7-day return policy</p>
+                                    </div>
+                                    <div>
+                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Fit</h4>
+                                        <p class=\"c--gry font18 m-0\">Regular Fit</p>
+                                    </div>
+                                    <div>
+                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Made In</h4>
+                                        <p class=\"c--gry font18 m-0\">India</p>
+                                    </div>
+                                </div>
+                            ",
               'specifications' => "Category: {$grandchild->title}. Material: Assorted Fabrics. Available Colors: Red, Blue, Green, Brown. Sizes: XS, S, M, L, XL (where applicable).",
               'care_maintenance' => "Follow garment care label. Machine wash cold, gentle cycle. Do not bleach. Dry flat.",
               'warranty' => "30-day manufacturer warranty on defects.",
@@ -126,7 +137,7 @@ class ProductSeeder extends Seeder
               }
             }
 
-            // ---- Variant generation: keep original looping (Color x Material) but include Size if present ----
+            // ---- Variant generation: Color x Material (and Size if present) ----
             $colorMap = $attributeMap['Color'] ?? [];
             $materialMap = $attributeMap['Material'] ?? [];
             $sizeMap = $attributeMap['Size'] ?? [];
@@ -144,7 +155,9 @@ class ProductSeeder extends Seeder
 
               // attach a random media from the existing media map
               $allMedia = [];
-              foreach ($mediaGalleryMap as $arr) { $allMedia = array_merge($allMedia, $arr); }
+              foreach ($mediaGalleryMap as $arr) {
+                $allMedia = array_merge($allMedia, $arr);
+              }
               $randomMediaId = $allMedia[array_rand($allMedia)] ?? null;
               if ($randomMediaId) {
                 ProductVariantImages::create([
@@ -155,7 +168,7 @@ class ProductSeeder extends Seeder
               }
 
               // attach any available attribute first-values
-              foreach (['Color','Material','Size'] as $maybe) {
+              foreach (['Color', 'Material', 'Size'] as $maybe) {
                 if (!empty($attributeMap[$maybe])) {
                   $firstVal = array_values($attributeMap[$maybe])[0];
                   ProductVariantAttribute::create([
@@ -280,9 +293,9 @@ class ProductSeeder extends Seeder
                 }
               }
             }
-          }
-        }
-      }
-    }
+          } // end for p
+        } // end foreach grandchild
+      } // end foreach child
+    } // end foreach parent
   }
 }

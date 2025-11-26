@@ -37,6 +37,7 @@ class LoginService
     return strlen($decoded) >= 11 && (time() - (int)substr($decoded, 0, 10) <= 300);
   }
 
+
   public static function otpVerification($params): array
   {
     if (!self::verifyHash($params->hash))

@@ -20,12 +20,12 @@ class FashionCategoryData
         'Tops' => ['Shirts', 'T-Shirts'],
         'Bottoms' => ['Jeans', 'Trousers'],
         'Footwear' => ['Sneakers', 'Formal Shoes'],
-      ],
-      'Kids' => [
-        'Girls Clothing' => ['Dresses', 'Tops'],
-        'Boys Clothing' => ['T-Shirts', 'Shorts'],
-        'Kids Footwear' => ['School Shoes', 'Sandals'],
-      ],
+      ]
+      // 'Kids' => [
+      //   'Girls Clothing' => ['Dresses', 'Tops'],
+      //   'Boys Clothing' => ['T-Shirts', 'Shorts'],
+      //   'Kids Footwear' => ['School Shoes', 'Sandals'],
+      // ],
       // 'Accessories' => [
       //   'Bags' => ['Handbags', 'Backpacks'],
       //   'Jewelry' => ['Necklaces', 'Bracelets'],

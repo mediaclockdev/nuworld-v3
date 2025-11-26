@@ -10,6 +10,7 @@ use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Frontend\Auth\SignupRequest;
 use App\Http\Requests\Frontend\Auth\OtpRequest;
+use App\Http\Requests\Frontend\Auth\RegisterRequest;
 use App\Http\Requests\Frontend\HashRequest;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -44,6 +45,10 @@ class AuthenticationController extends Controller
     $hashCode = Str::random(16) . Hashids::encode(time() . $user->id);
     return ApiResponse::success(['hash' => $hashCode], __('response.otp.success.sent.email'));
   }
+
+
+
+
 
   /**
    * @OA\Post(

@@ -6,6 +6,7 @@ use App\Contracts\CommonServiceInterface;
 use App\Models\CmsPage;
 use App\Models\CustomBanner;
 use App\Models\MenuItem;
+use App\Models\ProductCategory;
 use Illuminate\Support\ServiceProvider;
 use App\Services\Backend\CommonService;
 use Illuminate\Support\Facades\Blade;
@@ -35,7 +36,7 @@ class AppServiceProvider extends ServiceProvider
       return Route::has($routeName);
     });
     View::composer('*', function ($view) {
-      $menus = MenuItem::with(['children'])
+      $menus = ProductCategory::with(['children'])
         ->where('parent_id', 0)
         ->take(7)
         ->get(['title', 'id']);
