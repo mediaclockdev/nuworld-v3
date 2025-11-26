@@ -23,17 +23,17 @@ class CategoryService
    */
   public function getCategoriesWithProducts(int $limit = 16, ?string $orderBy = null): Collection
   {
-    $slugs = [
-      'red-apples',
-      'hass-avocados',
-      'chicken',
-      'white-bread',
-      'ground-goat',
-    ];
+    // $slugs = [
+    //   'red-apples',
+    //   'hass-avocados',
+    //   'chicken',
+    //   'white-bread',
+    //   'ground-goat',
+    // ];
 
     $query = ProductCategory::whereHas('products')
-      ->whereIn('slug', $slugs)
-      ->orderByRaw("FIELD(slug, '" . implode("','", $slugs) . "')") // preserve the given sequence
+      // ->whereIn('slug', $slugs)
+      // ->orderByRaw("FIELD(slug, '" . implode("','", $slugs) . "')") // preserve the given sequence
       ->when($orderBy, fn($q) => $q->orderBy('created_at', $orderBy === 'latest' ? 'desc' : 'asc'));
 
     return $limit > 0 ? $query->take($limit)->get() : $query->get();
@@ -151,11 +151,32 @@ class CategoryService
   //     ->get(['title', 'id']);
   // }
 
-  public function getNestedCategories($id = 0)
+  // public function getNestedCategories($id = 0)
+  // {
+  //   return ProductCategory::with(['children.children'])
+  //     ->where('parent_id', 0)
+  //     ->take(7)
+  //     ->get();
+  // }
+
+  public function getNestedCategories(int $parentId = 0, int $limit = 7)
   {
-    return ProductCategory::with(['children'])
-      ->where('parent_id', 0)
-      ->take(7)
+    return ProductCategory::with([
+      'children' => function ($q) {
+        $q->select('id', 'title', 'slug', 'parent_id', 'sequence', 'category_image')
+          ->orderBy('sequence')
+          ->with([
+            'children' => function ($q2) {
+              $q2->select('id', 'title', 'slug', 'parent_id', 'sequence', 'category_image')
+                ->orderBy('sequence');
+            }
+          ]);
+      }
+    ])
+      ->select('id', 'title', 'slug', 'parent_id', 'sequence', 'category_image')
+      ->where('parent_id', $parentId)   // root categories
+      ->orderBy('sequence')
+      ->take($limit)
       ->get();
   }
 

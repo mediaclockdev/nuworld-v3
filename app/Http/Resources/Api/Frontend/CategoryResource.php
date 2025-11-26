@@ -21,7 +21,7 @@ class CategoryResource extends JsonResource
       'slug' => $this->slug,
       'image' => $this->category_image ? asset('public/storage/uploads/categories/' . $this->category_image) : asset('public/backend/assetss/images/products/product_thumb.jpg'),
       'children' => CategoryListResource::collection($this->whenLoaded('children')),
-      'products' => BaseProductResource::collection($this->whenLoaded('products')),
+      // 'products' => BaseProductResource::collection($this->whenLoaded('products')),
     ];
   }
 }
