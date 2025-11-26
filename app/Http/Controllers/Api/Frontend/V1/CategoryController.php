@@ -29,18 +29,41 @@ class CategoryController extends Controller
       'categories_nested' => CategoryResource::collection($categories),
     ], __('response.success.fetch', ['item' => 'Category Page Data']));
   }
+  // public function getCategoryBySlug($slug = null)
+  // {
+  //   ifApiTokenExists();
+  //   $category = $this->categoryService->getCategory($slug);
+  //   //pd($category);
+
+  //   if (!$category)
+  //     return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
+
+  //   $productVariants = $category->products->isNotEmpty()
+  //     ? $this->productService->getProductVariants($category->products[0]->id)
+  //     : collect([]);
+
+  //   return ApiResponse::success([
+  //     'category' => CategoryResource::make($category),
+  //     'product_variants' => ProductResource::collection($productVariants),
+  //   ], __('response.success.fetch', ['item' => 'Category']));
+  // }
+
   public function getCategoryBySlug($slug = null)
   {
     ifApiTokenExists();
+
     $category = $this->categoryService->getCategory($slug);
-    //pd($category);
 
     if (!$category)
       return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
 
-    $productVariants = $category->products->isNotEmpty()
-      ? $this->productService->getProductVariants($category->products[0]->id)
-      : collect([]);
+    if ($category->products->isEmpty()) {
+      $productVariants = collect([]);
+    } else {
+      $productVariants = $category->products->map(function ($product) {
+        return $product->variants()->first(); // Fetch first variant of each product
+      })->filter();
+    }
 
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
