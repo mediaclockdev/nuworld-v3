@@ -23,20 +23,20 @@ class CategoryService
    */
   public function getCategoriesWithProducts(int $limit = 16, ?string $orderBy = null): Collection
   {
-      $slugs = [
-          'red-apples',
-          'hass-avocados',
-          'chicken',
-          'white-bread',
-          'ground-goat',
-      ];
+    $slugs = [
+      'red-apples',
+      'hass-avocados',
+      'chicken',
+      'white-bread',
+      'ground-goat',
+    ];
 
-      $query = ProductCategory::whereHas('products')
-          ->whereIn('slug', $slugs)
-          ->orderByRaw("FIELD(slug, '" . implode("','", $slugs) . "')") // preserve the given sequence
-          ->when($orderBy, fn($q) => $q->orderBy('created_at', $orderBy === 'latest' ? 'desc' : 'asc'));
+    $query = ProductCategory::whereHas('products')
+      ->whereIn('slug', $slugs)
+      ->orderByRaw("FIELD(slug, '" . implode("','", $slugs) . "')") // preserve the given sequence
+      ->when($orderBy, fn($q) => $q->orderBy('created_at', $orderBy === 'latest' ? 'desc' : 'asc'));
 
-      return $limit > 0 ? $query->take($limit)->get() : $query->get();
+    return $limit > 0 ? $query->take($limit)->get() : $query->get();
   }
 
   /**
@@ -142,12 +142,22 @@ class CategoryService
     ];
   }
 
+  // public function getNestedCategories($id = 0)
+  // {
+  //   return ProductCategory::with(['children'])
+  //     ->where('parent_id', $id)
+  //     ->orderBy('sequence', 'asc')
+  //     ->take(7)
+  //     ->get(['title', 'id']);
+  // }
+
   public function getNestedCategories($id = 0)
   {
     return ProductCategory::with(['children'])
-      ->where('parent_id', $id)
-      ->orderBy('sequence', 'asc')
+      ->where('parent_id', 0)
       ->take(7)
-      ->get(['title', 'id']);
+      ->get();
   }
+
+  //$menus =
 }

@@ -28,6 +28,7 @@ class CategoryController extends Controller
     // $brands = $this->bannerService->getBanner('brand_carousel', false, 'custom_order')->take(10);
     // $best_selling_products = $this->productService->getBestSellingProducts();
     $categoriesNested = $this->categoryService->getNestedCategories();
+    pd($categoriesNested);
     //$checkout_collections = $this->bannerService->getBanner('app_category_page_checkout_collections', false, 'custom_order');
 
     return ApiResponse::success([
