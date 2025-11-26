@@ -24,19 +24,19 @@ class CategoryController extends Controller
     ifApiTokenExists();
 
     $categories = $this->categoryService->getCategoriesWithProducts(12);
-    $dealsOfTheDay = $this->bannerService->getBanner('hot_deals_category_banner', false, 'custom_order');
-    $brands = $this->bannerService->getBanner('brand_carousel', false, 'custom_order')->take(10);
-    $best_selling_products = $this->productService->getBestSellingProducts();
+    // $dealsOfTheDay = $this->bannerService->getBanner('hot_deals_category_banner', false, 'custom_order');
+    // $brands = $this->bannerService->getBanner('brand_carousel', false, 'custom_order')->take(10);
+    // $best_selling_products = $this->productService->getBestSellingProducts();
     $categoriesNested = $this->categoryService->getNestedCategories();
-    $checkout_collections = $this->bannerService->getBanner('app_category_page_checkout_collections', false, 'custom_order');
+    //$checkout_collections = $this->bannerService->getBanner('app_category_page_checkout_collections', false, 'custom_order');
 
     return ApiResponse::success([
       'category_grid_view' => CategoryResource::collection($categories),
-      'deals_of_the_day' => CategoryHotDealsBannerResource::collection($dealsOfTheDay),
-      'brands' => BrandBannerResource::collection($brands),
-      'best_selling_products' => BestSellingProductResource::collection($best_selling_products),
+      // 'deals_of_the_day' => CategoryHotDealsBannerResource::collection($dealsOfTheDay),
+      // 'brands' => BrandBannerResource::collection($brands),
+      // 'best_selling_products' => BestSellingProductResource::collection($best_selling_products),
       'categories_nested' => CategoryResource::collection($categoriesNested),
-      'checkout_collections' => CategoryCheckoutCollectionBannerResource::collection($checkout_collections),
+      //'checkout_collections' => CategoryCheckoutCollectionBannerResource::collection($checkout_collections),
     ], __('response.success.fetch', ['item' => 'Category Page Data']));
   }
 
