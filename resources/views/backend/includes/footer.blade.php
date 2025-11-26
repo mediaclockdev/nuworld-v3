@@ -8,8 +8,12 @@
       <div class="col-md-6">
         <div class="text-md-end footer-links d-none d-md-block">
           <p class="copyright">Made with <span style="color: red; font-size: 1.2em;">&#x2661;</span>
-            by: <a href=""><img src={{ asset('/public/backend/assetss/images/svg/sundew-icon.svg') }}
-                alt="Sundew"></a></p>
+            {{-- by: <a href=""><img src={{ asset('/public/backend/assetss/images/svg/sundew-icon.svg') }}
+                alt="Mediaclock"></a></p> --}}
+            by: </p>
+          {{-- by:
+          <h4>Mediaclock</h4> --}}
+          </p>
         </div>
       </div>
     </div>

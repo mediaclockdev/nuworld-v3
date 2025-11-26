@@ -33,6 +33,7 @@ class CategoryController extends Controller
   {
     ifApiTokenExists();
     $category = $this->categoryService->getCategory($slug);
+    //pd($category);
 
     if (!$category)
       return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
