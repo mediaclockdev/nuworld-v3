@@ -38,7 +38,7 @@ class AdminSeed extends Seeder
         // avoid email collisions: if email already exists for another id, map to that id instead of inserting duplicate
         $email = $data['email'] ?? "seed-admin-{$id}@example.com";
         $existingByEmail = DB::table('admins')->where('email', $email)->first();
-
+ 
         if ($existingByEmail) {
           // If an admin with that email already exists, we won't try to reuse the explicit id.
           continue;
