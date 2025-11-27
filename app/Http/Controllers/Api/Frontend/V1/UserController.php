@@ -68,4 +68,9 @@ class UserController extends Controller
     $address = Address::where('id', $id)->where('user_id', user()->id)->first();
     return $address->delete() ? ApiResponse::success(null, __('response.success.delete', ['item' => 'User Address']), 200) : ApiResponse::error(__('response.error.delete', ['item' => 'User Address']), 400);
   }
+
+  public function dashboardOverview(Request $request)
+  {
+    $data = $this->productService->getLatestProducts($limit, 'latest');
+  }
 }

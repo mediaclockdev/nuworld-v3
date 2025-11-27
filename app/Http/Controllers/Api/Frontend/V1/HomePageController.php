@@ -5,18 +5,20 @@ namespace App\Http\Controllers\Api\Frontend\V1;
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
 use App\Http\Resources\Api\Frontend\LandingPageResource;
+use App\Models\ProductCategory;
 use App\Models\SiteSetting;
 use App\Services\Frontend\{
   BannerService,
   CategoryService,
   HomePageService,
-  CartService
+  CartService,
+  ProductService
 };
 use Illuminate\Http\Request;
 
 class HomePageController extends Controller
 {
-  public function __construct(private CategoryService $categoryService, private BannerService $bannerService, private HomePageService $homePageService, private CartService $cartService) {}
+  public function __construct(private CategoryService $categoryService, private BannerService $bannerService, private HomePageService $homePageService, private CartService $cartService, protected ProductService $productService) {}
   public function index()
   {
     ifApiTokenExists();
@@ -26,23 +28,47 @@ class HomePageController extends Controller
     $cart_items_data = $this->cartService->getCartData();
     $savedItems = collect($cart_items_data['saved_for_later_items'] ?? []);
 
+    // For Top Four Categories
+    $homePageTopCategoryBanner = $this->bannerService->getBanner('home_page_top_category_banner', false, 'custom_order')->first();
+    $topFourProductCategoriesData = [];
+
+    if ($homePageTopCategoryBanner && $homePageTopCategoryBanner->settings) {
+      $homePageTopCategoryBannerArray = json_decode($homePageTopCategoryBanner->settings, true);
+      if (!empty($homePageTopCategoryBannerArray['options'])) {
+        $topFourProductCategories = ProductCategory::whereHas('products')
+          ->whereIn('id', $homePageTopCategoryBannerArray['options'])
+          ->get();
+        if ($topFourProductCategories->count() > 0) {
+          $topFourProductCategoriesData = $topFourProductCategories;
+        }
+      }
+    }
+    if (empty($topFourProductCategoriesData)) {
+      $topFourProductCategoriesData = ProductCategory::whereHas('products')->take(4)->get();
+    }
+
+
     $data = [
       'site_logo' => siteLogo(),
-      'site_name' => $siteName ?? 'Sundew Ecomm',
+      'site_name' => $siteName ?? 'NEUWRLD',
       'cart_count' => count($cartItems),
       'wishlist_count' => count($savedItems),
-      'productCategories' => $this->categoryService->getCategoriesWithProducts(6, 'latest'),
+      'productCategories' => $topFourProductCategoriesData,
       'all_categories' => $this->categoryService->getCategoriesWithProducts(0, 'latest'),
       'home_banner' => $this->bannerService->getBanner('hero', false, 'custom_order'),
       'home_inner_banner' => $this->bannerService->getBanner('app_home_landing_inner_banner', false, 'custom_order'),
+      'latest_products' => $this->productService->getLatestProducts(12, 'latest'),
+      'footer_menu' => $this->homePageService->getAppFooterMenus()
     ];
     return ApiResponse::success(new LandingPageResource($data), __('response.success.fetch', ['item' => 'Home Landing Page Data']));
   }
+
 
   public function blogs(Request $request)
   {
     return $this->fetchBlogs($request, 'min');
   }
+
 
   public function blogList(Request $request)
   {

@@ -126,7 +126,7 @@
           @empty
             <div class="swiper-slide">
               <div class="product-card flow-rootX">
-                <p class="text-center">No recently viewed products.</p>
+                <p class="text-center">No products.</p>
               </div>
             </div>
           @endforelse

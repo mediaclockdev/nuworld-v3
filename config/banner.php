@@ -214,7 +214,7 @@ return [
     'display_name' => 'Home Page Top Category Banner',
     'options' => true,
     // 'content' => true,
-    'banner_type' => 'web',
+    'banner_type' => 'both',
   ],
   'blog_page_banner' => [
     'display_name' => 'Blog Page Banner',
@@ -224,7 +224,7 @@ return [
     'title' => true,
     'banner_type' => 'web',
   ],
-   'mega_menu_banner' => [
+  'mega_menu_banner' => [
     'display_name' => 'Mega Menu Banner',
     'single_option' => true,
     'image' => true,
@@ -238,14 +238,14 @@ return [
   'book_collection_banner' => [
     'display_name' => 'Book Collection Banner',
     'title' => true,
-     'coordinates_image' => true,
+    'coordinates_image' => true,
     // 'default_image_size' => '1360 x 500 px',
-     'alt_text' => true,
+    'alt_text' => true,
     'banner_type' => 'web',
     'coordinates' => true, // enable dynamic hotspots
     'product_sku' => true, // <— allows product SKU entry
-],
- 'shop_details_page_banner' => [
+  ],
+  'shop_details_page_banner' => [
     'display_name' => 'Shop Details Page Banner',
     'single_option' => true,
     'image' => true,

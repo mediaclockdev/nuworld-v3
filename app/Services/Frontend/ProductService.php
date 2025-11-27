@@ -342,6 +342,28 @@ class ProductService
     return $limit !== null ? $query->take($limit)->get() : $query->get();
   }
 
+  // public function getLatestProducts($limit = null): Collection
+  // {
+  //   // Step 1: Get latest variants ordered by created_at DESC
+  //   // We fetch extra rows because many belong to same product, then unique by product_id
+  //   $fetchCount = $limit ? $limit * 5 : 50; // safe buffer
+
+  //   $variants = ProductVariant::with([
+  //     'category',
+  //     'product',
+  //     'images.gallery',
+  //   ])
+  //     ->orderBy('created_at', 'desc')
+  //     ->take($fetchCount)  // fetch extra to allow proper unique() behavior
+  //     ->get();
+
+  //   // Step 2: Reduce to one variant per product
+  //   $uniqueLatest = $variants->unique('product_id')->values();
+
+  //   // Step 3: Apply final limit
+  //   return $limit ? $uniqueLatest->take($limit)->values() : $uniqueLatest;
+  // }
+
   public function applyPincode(string $pincode = ''): array
   {
     $pincodeData = Pincode::where([

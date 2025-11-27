@@ -81,16 +81,118 @@ class ProductController extends Controller
     );
   }
 
+  // public function getProductBySku(Request $request, $sku = null)
+  // {
+  //   ifApiTokenExists();
+  //   $productVariant = $this->productService->getProductVariantBySku($sku);
+  //   if (!$productVariant)
+  //     return ApiResponse::error(__('response.not_found', ['item' => 'Product Variant']), 404);
+  //   $orderedImages = $productVariant->images->sortByDesc('is_default');
+  //   //$colorOptions = $this->productService->getAttributeOptions($productVariant);
+  //   $colorOptions = [];
+  //   //dd($colorOptions);
+  //   // ------------------ Handle Reviews ------------------
+  //   $productReviews = collect();
+
+  //   if (auth()->check()) {
+  //     $user = auth()->user();
+  //     $userId = $user->id;
+
+  //     $hasCompletedOrder = $user->hasCompletedOrderForVariant($productVariant->id); // optional to return
+
+  //     $userReview = $productVariant->variantReviews()
+  //       ->with('user')
+  //       ->where('user_id', $userId)
+  //       ->where('status', 1)
+  //       ->first();
+
+  //     if ($userReview) {
+  //       $productReviews->push($userReview);
+
+  //       $otherReviews = $productVariant->variantReviews()
+  //         ->with('user')
+  //         ->where('user_id', '!=', $userId)
+  //         ->where('status', 1)
+  //         ->orderByDesc('created_at')
+  //         ->take(2)
+  //         ->get();
+
+  //       $productReviews = $productReviews->merge($otherReviews);
+  //     } else {
+  //       $productReviews = $productVariant->variantReviews()
+  //         ->with('user')
+  //         ->where('status', 1)
+  //         ->orderByDesc('created_at')
+  //         ->take(3)
+  //         ->get();
+  //     }
+  //   } else {
+  //     $productReviews = $productVariant->variantReviews()
+  //       ->with('user')
+  //       ->where('status', 1)
+  //       ->orderByDesc('created_at')
+  //       ->take(3)
+  //       ->get();
+  //   }
+  //   $defaultPincode = config('defaults.default_pincode');
+
+  //   $pincodeData = Pincode::where('status', 1)
+  //     ->where('code', $defaultPincode)
+  //     ->first(['estimate_days', 'code']);
+  //   // $excludeProductId = $request->get('excludeProductId'); //excludeProductId
+  //   // $checkout_products = $this->productCardService->getProductsWithVariants($excludeProductId);
+  //   // ------------------ Checkout More Products ------------------
+
+  //   // ------------------ Checkout More Products ------------------
+  //   // Fetch products (not resources yet)
+  //   $checkoutProducts = ProductVariant::where('status', 1)->where('product_id', '!=', $productVariant->product_id)->take(3)->get();
+
+  //   // Apply excludeProductId filter
+  //   // foreach ($checkoutProducts as $product) {
+  //   //   if ($request->filled('excludeProductId')) {
+  //   //     $excludeId = Hashids::decode($request->excludeProductId)[0] ?? null;
+  //   //     $product->variants = $product->variants->where('product_id', '!=', $excludeId)->values();
+  //   //   } else {
+  //   //     $product->variants = $product->variants->values();
+  //   //   }
+  //   // }
+  //   $data = [
+  //     'product' => ProductDetailsResource::make($productVariant),
+  //     'checkout_more_products' => ProductResource::collection($checkoutProducts),
+  //     //'checkout_more_products' => ProductResource::collection($checkout_products),
+  //     'color_options' => ColorOptionResource::collection($colorOptions),
+  //     'images' => ProductImageResource::collection($orderedImages),
+  //     'reviews' => ProductReviewResource::collection($productReviews),
+  //     'pincodeData' => $pincodeData
+  //   ];
+
+  //   return ApiResponse::success($data, __('response.success.fetch', ['item' => 'Product']));
+  // }
+
   public function getProductBySku(Request $request, $sku = null)
   {
     ifApiTokenExists();
+
     $productVariant = $this->productService->getProductVariantBySku($sku);
-    if (!$productVariant)
+    if (!$productVariant) {
       return ApiResponse::error(__('response.not_found', ['item' => 'Product Variant']), 404);
+    }
+
+    // images
     $orderedImages = $productVariant->images->sortByDesc('is_default');
-    //$colorOptions = $this->productService->getAttributeOptions($productVariant);
-    $colorOptions = [];
-    //dd($colorOptions);
+
+    // --------- Attribute / Color Options (same logic as web show) ----------
+    // Expecting getAttributeOptions to return ['attributes' => ..., 'combinations' => ...]
+    $attributeOptionsData = $this->productService->getAttributeOptions($productVariant);
+    $attributeOptions = $attributeOptionsData['attributes'] ?? [];
+    $combinations = $attributeOptionsData['combinations'] ?? [];
+
+    // If you only want color options (for example attribute_id or attribute_name === 'color'),
+    // filter $attributeOptions accordingly. Example assuming attribute has 'name' key:
+    // $colorOptions = collect($attributeOptions)->filter(fn($a) => strtolower($a['name'] ?? '') === 'color')->values();
+    // But for now return all attribute options and let frontend decide.
+    $colorOptions = $attributeOptions;
+
     // ------------------ Handle Reviews ------------------
     $productReviews = collect();
 
@@ -134,36 +236,29 @@ class ProductController extends Controller
         ->take(3)
         ->get();
     }
+
     $defaultPincode = config('defaults.default_pincode');
 
     $pincodeData = Pincode::where('status', 1)
       ->where('code', $defaultPincode)
       ->first(['estimate_days', 'code']);
-    // $excludeProductId = $request->get('excludeProductId'); //excludeProductId
-    // $checkout_products = $this->productCardService->getProductsWithVariants($excludeProductId);
-    // ------------------ Checkout More Products ------------------
 
-    // ------------------ Checkout More Products ------------------
-    // Fetch products (not resources yet)
-    $checkoutProducts = ProductVariant::where('status', 1)->where('product_id', '!=', $productVariant->product_id)->take(3)->get();
+    // Checkout more products (keep as you had it)
+    $checkoutProducts = ProductVariant::where('status', 1)
+      ->where('product_id', '!=', $productVariant->product_id)
+      ->take(3)
+      ->get();
 
-    // Apply excludeProductId filter
-    // foreach ($checkoutProducts as $product) {
-    //   if ($request->filled('excludeProductId')) {
-    //     $excludeId = Hashids::decode($request->excludeProductId)[0] ?? null;
-    //     $product->variants = $product->variants->where('product_id', '!=', $excludeId)->values();
-    //   } else {
-    //     $product->variants = $product->variants->values();
-    //   }
-    // }
+    // Build response data, include attribute options + combinations
     $data = [
       'product' => ProductDetailsResource::make($productVariant),
       'checkout_more_products' => ProductResource::collection($checkoutProducts),
-      //'checkout_more_products' => ProductResource::collection($checkout_products),
-      'color_options' => ColorOptionResource::collection($colorOptions),
+      'color_options' => ColorOptionResource::collection(collect($colorOptions)),
+      'attribute_options' => $attributeOptions,     // optional, if you want raw attributes too
+      'combinations' => $combinations,              // optional
       'images' => ProductImageResource::collection($orderedImages),
       'reviews' => ProductReviewResource::collection($productReviews),
-      'pincodeData' => $pincodeData
+      'pincodeData' => $pincodeData,
     ];
 
     return ApiResponse::success($data, __('response.success.fetch', ['item' => 'Product']));

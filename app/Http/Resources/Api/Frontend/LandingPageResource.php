@@ -19,10 +19,12 @@ class LandingPageResource extends JsonResource
       'site_name' => $this['site_name'] ?? null,
       'cart_count' => $this['cart_count'] ?? 0,
       'wishlist_count' => $this['wishlist_count'] ?? 0,
-      'product_categories' => CategoryResource::collection($this['productCategories']) ?? [],
+      'trending_categories' => CategoryResource::collection($this['productCategories']) ?? [],
       'all_categories' => CategoryResource::collection($this['all_categories']) ?? [],
       'home_banner' => BannerResource::collection($this['home_banner']) ?? [],
       'home_inner_banner' => BannerResource::collection($this['home_inner_banner']) ?? [],
+      'latest_products' => ProductResource::collection($this['latest_products']) ?? [],
+      // 'latest_products' => $this['footer_menu']
     ];
   }
 }
