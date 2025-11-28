@@ -253,7 +253,7 @@ class ProductController extends Controller
     $data = [
       'product' => ProductDetailsResource::make($productVariant),
       'checkout_more_products' => ProductResource::collection($checkoutProducts),
-      'color_options' => ColorOptionResource::collection(collect($colorOptions)),
+      //'color_options' => ColorOptionResource::collection(collect($colorOptions)),
       'attribute_options' => $attributeOptions,     // optional, if you want raw attributes too
       'combinations' => $combinations,              // optional
       'images' => ProductImageResource::collection($orderedImages),
