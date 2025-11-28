@@ -54,6 +54,7 @@
               'Book Collection Banner' => 'book_collection_banner.png',
               'Mega Menu Banner' => 'mega_menu_banner.png',
               'Shop Details Page Banner' => 'shop_details.png',
+              'Home Page Trending Products Banner' => 'home_page_top_category_banner.png',
           ];
           $fallback = $staticImages[$value['display_name']] ?? null;
         @endphp

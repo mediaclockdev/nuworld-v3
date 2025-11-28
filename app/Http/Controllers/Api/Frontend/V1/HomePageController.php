@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\Frontend\V1;
 use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
 use App\Http\Resources\Api\Frontend\LandingPageResource;
+use App\Models\BestSeller;
 use App\Models\ProductCategory;
+use App\Models\ProductRecommendation;
 use App\Models\SiteSetting;
 use App\Services\Frontend\{
   BannerService,
@@ -27,6 +29,10 @@ class HomePageController extends Controller
     $cartItems = collect($cart_items_data['cart_items'] ?? []);
     $cart_items_data = $this->cartService->getCartData();
     $savedItems = collect($cart_items_data['saved_for_later_items'] ?? []);
+    $recommended_products = BestSeller::with('variant')->get();
+
+    $variantList = $recommended_products->pluck('variant')->filter();
+    // pd($recommended_products);
 
     // For Top Four Categories
     $homePageTopCategoryBanner = $this->bannerService->getBanner('home_page_top_category_banner', false, 'custom_order')->first();
@@ -57,7 +63,7 @@ class HomePageController extends Controller
       'all_categories' => $this->categoryService->getCategoriesWithProducts(0, 'latest'),
       'home_banner' => $this->bannerService->getBanner('hero', false, 'custom_order'),
       'home_inner_banner' => $this->bannerService->getBanner('app_home_landing_inner_banner', false, 'custom_order'),
-      'latest_products' => $this->productService->getLatestProducts(12, 'latest'),
+      'latest_products' => $variantList,
       'footer_menu' => $this->homePageService->getAppFooterMenus()
     ];
     return ApiResponse::success(new LandingPageResource($data), __('response.success.fetch', ['item' => 'Home Landing Page Data']));

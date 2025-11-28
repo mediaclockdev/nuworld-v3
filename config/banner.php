@@ -255,6 +255,13 @@ return [
     'banner_type' => 'web',
   ],
 
+  'app_home_trending_products_banner' => [
+    'display_name' => 'Home Page Trending Products Banner',
+    'options' => true,
+    // 'content' => true,
+    'banner_type' => 'app',
+  ],
+
 
 
 
