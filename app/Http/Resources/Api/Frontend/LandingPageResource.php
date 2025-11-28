@@ -23,7 +23,7 @@ class LandingPageResource extends JsonResource
       'all_categories' => CategoryResource::collection($this['all_categories']) ?? [],
       'home_banner' => BannerResource::collection($this['home_banner']) ?? [],
       'home_inner_banner' => BannerResource::collection($this['home_inner_banner']) ?? [],
-      'latest_products' => ProductResource::collection($this['latest_products']) ?? [],
+      'recommended_products' => ProductResource::collection($this['latest_products']) ?? [],
       // 'latest_products' => $this['footer_menu']
     ];
   }
