@@ -179,7 +179,14 @@ class ProductController extends Controller
     }
 
     // images
-    $orderedImages = $productVariant->images->sortByDesc('is_default');
+    // $orderedImages = $productVariant->images->sortByDesc('is_default');
+    // pd($orderedImages);
+
+    $images = $productVariant->images;
+
+    $orderedImages = $images->count() === 1
+      ? $images->sortByDesc('is_default')
+      : $images->where('is_default', 0)->values();
 
     // --------- Attribute Options + Combinations ----------
     $attributeOptionsData = $this->productService->getAttributeOptions($productVariant);
