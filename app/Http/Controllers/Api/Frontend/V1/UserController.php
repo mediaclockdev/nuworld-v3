@@ -28,23 +28,49 @@ class UserController extends Controller
 
   public function updateUserData(UpdateProfileRequest $request): JsonResponse
   {
-    $updated = UserProfile::updateProfile($request->safe()->except('email'));
+    $payload = $request->safe()->except('email');
 
-    if (! $updated) {
+    try {
+      // updateProfile should ideally return the updated model or true/false
+      $updated = UserProfile::updateProfile($payload);
+
+      if (! $updated) {
+        // Log useful debug info so you can inspect later
+        \Log::warning('User profile update returned false', [
+          'user_id' => auth()->id(),
+          'payload' => $payload,
+        ]);
+
+        return ApiResponse::error(
+          __('response.error.update', ['item' => 'User Data']),
+          400
+        );
+      }
+
+      // If updateProfile returned the model, use it; otherwise fetch fresh
+      $userProfile = $updated instanceof \App\Models\UserProfile
+        ? $updated
+        : UserProfile::getProfileInfo();
+
+      return ApiResponse::success(
+        UserProfileResource::make($userProfile),
+        __('response.success.update', ['item' => 'User Data'])
+      );
+    } catch (\Throwable $e) {
+      \Log::error('Exception while updating user profile', [
+        'user_id' => auth()->id(),
+        'exception' => $e->getMessage(),
+        'trace' => $e->getTraceAsString(),
+        'payload' => $payload,
+      ]);
+
       return ApiResponse::error(
         __('response.error.update', ['item' => 'User Data']),
-        400
+        500
       );
     }
-
-    // Fetch updated profile
-    $userProfile = UserProfile::getProfileInfo();
-
-    return ApiResponse::success(
-      UserProfileResource::make($userProfile),
-      __('response.success.update', ['item' => 'User Data'])
-    );
   }
+
 
 
   public function fetchUserAddress(): JsonResponse
