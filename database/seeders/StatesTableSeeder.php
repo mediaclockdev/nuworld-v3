@@ -15,6 +15,7 @@ class StatesTableSeeder extends Seeder
   public function run()
   {
     $states = [
+
       // Indian States
       ['name' => 'Andhra Pradesh', 'country_id' => 101, 'created_by' => 1],
       ['name' => 'Arunachal Pradesh', 'country_id' => 101, 'created_by' => 1],
@@ -96,6 +97,14 @@ class StatesTableSeeder extends Seeder
       ['name' => 'West Virginia', 'country_id' => 230, 'created_by' => 1],
       ['name' => 'Wisconsin', 'country_id' => 230, 'created_by' => 1],
       ['name' => 'Wyoming', 'country_id' => 230, 'created_by' => 1],
+
+      // Australian States
+      ['name' => 'New South Wales',   'country_id' => 14, 'created_by' => 1],
+      ['name' => 'Victoria',          'country_id' => 14, 'created_by' => 1],
+      ['name' => 'Queensland',        'country_id' => 14, 'created_by' => 1],
+      ['name' => 'South Australia',   'country_id' => 14, 'created_by' => 1],
+      ['name' => 'Western Australia', 'country_id' => 14, 'created_by' => 1],
+      ['name' => 'Tasmania',          'country_id' => 14, 'created_by' => 1],
     ];
 
     DB::table('states')->insert($states);
