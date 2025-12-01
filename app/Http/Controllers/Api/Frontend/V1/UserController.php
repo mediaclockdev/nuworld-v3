@@ -58,7 +58,7 @@ class UserController extends Controller
 
 
 
- public function fetchUserAddress(): JsonResponse
+  public function fetchUserAddress(): JsonResponse
   {
     //dd(auth()->user());
     $country = Country::find(config('defaults.country_id'));
@@ -77,11 +77,17 @@ class UserController extends Controller
   }
   public function updateUserAddress(ApiAddressRequest $request): JsonResponse
   {
-    $response = Address::updateUserAddressApi($request->validated());
+    $address = Address::updateUserAddressApi($request->validated());
 
-    return $response === 0
-      ? ApiResponse::error(__('response.error.update', ['item' => 'User Address']), 400, null)
-      : ApiResponse::success(null, __('response.success.update', ['item' => 'User Address']), 200);
+    if (! $address) {
+      return ApiResponse::error(__('response.error.update', ['item' => 'User Address']), 400, null);
+    }
+
+    return ApiResponse::success(
+      new AddressResource($address),
+      __('response.success.update', ['item' => 'User Address']),
+      200
+    );
   }
 
   public function removeAddress(Request $request): JsonResponse
