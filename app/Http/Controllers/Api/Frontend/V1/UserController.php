@@ -30,9 +30,20 @@ class UserController extends Controller
   {
     $updated = UserProfile::updateProfile($request->safe()->except('email'));
 
-    return $updated
-      ? ApiResponse::success(null, __('response.success.update', ['item' => 'User Data']))
-      : ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 400);
+    if (! $updated) {
+      return ApiResponse::error(
+        __('response.error.update', ['item' => 'User Data']),
+        400
+      );
+    }
+
+    // Fetch updated profile
+    $userProfile = UserProfile::getProfileInfo();
+
+    return ApiResponse::success(
+      UserProfileResource::make($userProfile),
+      __('response.success.update', ['item' => 'User Data'])
+    );
   }
 
 
