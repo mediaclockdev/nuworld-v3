@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Vinkla\Hashids\Facades\Hashids;
+use Illuminate\Support\Facades\DB;
+
 
 class Address extends Model
 {
@@ -90,32 +92,64 @@ class Address extends Model
     return (bool) $address;
   }
 
-  public static function updateUserAddressApi(array $params): bool
+  // public static function updateUserAddressApi(array $params): bool
+  // {
+  //   // If this address should be primary, reset all other addresses
+  //   if (!empty($params['primary']) && $params['primary'] == 1) {
+  //     self::where('user_id', user()->id)
+  //       ->update(['primary' => 0]);
+  //   }
+
+  //   $address = self::updateOrCreate(
+  //     ['id' => $params['id'] ?? null, 'user_id' => user()->id],
+  //     [
+  //       'name'       => $params['name'],
+  //       'phone'      => $params['phone'],
+  //       'user_id'    => user()->id,
+  //       'primary'    => $params['primary'] ?? 0,
+  //       'type'       => 0,
+  //       'address_1'  => $params['address_line_1'],
+  //       'address_2'  => $params['address_line_2'],
+  //       'landmark'   => $params['landmark'],
+  //       'city'       => $params['city_name'],
+  //       'state_id'   => $params['state_id'],
+  //       'country_id' => $params['country_id'] ?? config('defaults.country_id'),
+  //       'pin'        => $params['pincode'],
+  //     ]
+  //   );
+
+  //   return (bool) $address;
+  // }
+
+  public static function updateUserAddressApi(array $params): ?self
   {
-    // If this address should be primary, reset all other addresses
-    if (!empty($params['primary']) && $params['primary'] == 1) {
-      self::where('user_id', user()->id)
-        ->update(['primary' => 0]);
-    }
+    return DB::transaction(function () use ($params) {
 
-    $address = self::updateOrCreate(
-      ['id' => $params['id'] ?? null, 'user_id' => user()->id],
-      [
-        'name'       => $params['name'],
-        'phone'      => $params['phone'],
-        'user_id'    => user()->id,
-        'primary'    => $params['primary'] ?? 0,
-        'type'       => 0,
-        'address_1'  => $params['address_line_1'],
-        'address_2'  => $params['address_line_2'],
-        'landmark'   => $params['landmark'],
-        'city'       => $params['city_name'],
-        'state_id'   => $params['state_id'],
-        'country_id' => $params['country_id'] ?? config('defaults.country_id'),
-        'pin'        => $params['pincode'],
-      ]
-    );
+      // If this address should be primary, reset all other addresses
+      if (! empty($params['primary']) && (int) $params['primary'] === 1) {
+        self::where('user_id', user()->id)->update(['primary' => 0]);
+      }
 
-    return (bool) $address;
+      $address = self::updateOrCreate(
+        ['id' => $params['id'] ?? null, 'user_id' => user()->id],
+        [
+          'name'       => $params['name'],
+          'phone'      => $params['phone'],
+          'user_id'    => user()->id,
+          'primary'    => $params['primary'] ?? 0,
+          'type'       => 0,
+          'address_1'  => $params['address_line_1'],
+          'address_2'  => $params['address_line_2'] ?? null,
+          'landmark'   => $params['landmark'] ?? null,
+          'city'       => $params['city_name'],
+          'state_id'   => $params['state_id'],
+          'country_id' => $params['country_id'] ?? config('defaults.country_id'),
+          'pin'        => $params['pincode'],
+        ]
+      );
+
+      // updateOrCreate returns model instance; return it (or null if something odd)
+      return $address ?: null;
+    });
   }
 }
