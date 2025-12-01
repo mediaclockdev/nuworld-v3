@@ -94,8 +94,42 @@ class UserController extends Controller
   public function removeAddress(Request $request): JsonResponse
   {
     $id = $request->id ?? null;
-    $address = Address::where('id', $id)->where('user_id', user()->id)->first();
-    return $address->delete() ? ApiResponse::success([], __('response.success.delete', ['item' => 'User Address']), 200) : ApiResponse::error(__('response.error.delete', ['item' => 'User Address']), 400);
+
+    // 1. Validate `id` presence + numeric
+    if (!$id || !is_numeric($id)) {
+      return response()->json([
+        'success' => false,
+        'data'    => [],
+        'message' => 'Invalid address id.',
+      ], 422);
+    }
+
+    // 2. Check address exists for given user
+    $address = Address::where('id', $id)
+      ->where('user_id', user()->id)
+      ->first();
+
+    if (!$address) {
+      return response()->json([
+        'success' => false,
+        'data'    => [],
+        'message' => 'Address not found.',
+      ], 422);
+    }
+
+    // 3. Delete address
+    if ($address->delete()) {
+      return ApiResponse::success(
+        [],
+        __('response.success.delete', ['item' => 'User Address']),
+        200
+      );
+    }
+
+    return ApiResponse::error(
+      __('response.error.delete', ['item' => 'User Address']),
+      400
+    );
   }
 
   // public function dashboardOverview(Request $request)
