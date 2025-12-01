@@ -35,17 +35,17 @@ class UserController extends Controller
 
       return $updated
         ? ApiResponse::success(null, __('response.success.update', ['item' => 'User Data']))
-        : ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 400);
+        : ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 400, null);
     } catch (\Throwable $e) {
+
       Log::error('User update failed', [
         'user_id' => auth()->id(),
         'error'   => $e->getMessage(),
       ]);
 
-      return ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 500);
+      return ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 500, null);
     }
   }
-
 
   public function fetchUserAddress(): JsonResponse
   {
