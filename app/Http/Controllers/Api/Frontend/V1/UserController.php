@@ -17,6 +17,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Vinkla\Hashids\Facades\Hashids;
+use Illuminate\Support\Facades\Log;
+
 
 class UserController extends Controller
 {
@@ -28,49 +30,21 @@ class UserController extends Controller
 
   public function updateUserData(UpdateProfileRequest $request): JsonResponse
   {
-    $payload = $request->safe()->except('email');
-
     try {
-      // updateProfile should ideally return the updated model or true/false
-      $updated = UserProfile::updateProfile($payload);
+      $updated = UserProfile::updateProfile($request->safe()->except('email'));
 
-      if (! $updated) {
-        // Log useful debug info so you can inspect later
-        \Log::warning('User profile update returned false', [
-          'user_id' => auth()->id(),
-          'payload' => $payload,
-        ]);
-
-        return ApiResponse::error(
-          __('response.error.update', ['item' => 'User Data']),
-          400
-        );
-      }
-
-      // If updateProfile returned the model, use it; otherwise fetch fresh
-      $userProfile = $updated instanceof \App\Models\UserProfile
-        ? $updated
-        : UserProfile::getProfileInfo();
-
-      return ApiResponse::success(
-        UserProfileResource::make($userProfile),
-        __('response.success.update', ['item' => 'User Data'])
-      );
+      return $updated
+        ? ApiResponse::success(null, __('response.success.update', ['item' => 'User Data']))
+        : ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 400);
     } catch (\Throwable $e) {
-      \Log::error('Exception while updating user profile', [
+      Log::error('User update failed', [
         'user_id' => auth()->id(),
-        'exception' => $e->getMessage(),
-        'trace' => $e->getTraceAsString(),
-        'payload' => $payload,
+        'error'   => $e->getMessage(),
       ]);
 
-      return ApiResponse::error(
-        __('response.error.update', ['item' => 'User Data']),
-        500
-      );
+      return ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 500);
     }
   }
-
 
 
   public function fetchUserAddress(): JsonResponse
