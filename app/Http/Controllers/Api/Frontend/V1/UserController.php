@@ -57,9 +57,10 @@ class UserController extends Controller
 
 
 
-  public function fetchUserAddress(): JsonResponse
+
+ public function fetchUserAddress(): JsonResponse
   {
-    dd(auth()->user());
+    //dd(auth()->user());
     $country = Country::find(config('defaults.country_id'));
     // pd($country);
     $data = [
@@ -74,7 +75,6 @@ class UserController extends Controller
 
     return ApiResponse::success($data, __('response.success.fetch', ['item' => 'User Address']), 200);
   }
-
   public function updateUserAddress(ApiAddressRequest $request): JsonResponse
   {
     $response = Address::updateUserAddressApi($request->validated());
@@ -91,8 +91,8 @@ class UserController extends Controller
     return $address->delete() ? ApiResponse::success(null, __('response.success.delete', ['item' => 'User Address']), 200) : ApiResponse::error(__('response.error.delete', ['item' => 'User Address']), 400);
   }
 
-  public function dashboardOverview(Request $request)
-  {
-    $data = $this->productService->getLatestProducts($limit, 'latest');
-  }
+  // public function dashboardOverview(Request $request)
+  // {
+  //   $data = $this->productService->getLatestProducts($limit, 'latest');
+  // }
 }
