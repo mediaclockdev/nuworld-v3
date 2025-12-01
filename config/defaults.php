@@ -1,12 +1,12 @@
 <?php
 return [
 
-  'country_code' => 'IN',  // Default Country as IN for India, US for US, null for All Countries
-  'country_id' => 101, // Default Country ID based on Countries table
+  'country_code' => 'AU',  // Default Country as IN for India, US for US, null for All Countries
+  'country_id' => 14, // Default Country ID based on Countries table
 
   'language' => 'en',   // Default Language
 
-  'timezone' => 'Asia/Kolkata',  // Default Timezone
+  'timezone' => 'Australia/Melbourne',  // Default Timezone
 
   'date_format' => 'd/m/Y',
   'date_format_js' => 'DD/MM/YYYY', // Date format for JS
