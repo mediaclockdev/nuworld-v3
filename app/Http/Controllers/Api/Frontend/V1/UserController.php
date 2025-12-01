@@ -31,21 +31,31 @@ class UserController extends Controller
   public function updateUserData(UpdateProfileRequest $request): JsonResponse
   {
     try {
-      $updated = UserProfile::updateProfile($request->safe()->except('email'));
+      // Perform the update (even if no actual values changed)
+      UserProfile::updateProfile($request->safe()->except('email'));
 
-      return $updated
-        ? ApiResponse::success(null, __('response.success.update', ['item' => 'User Data']))
-        : ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 400, null);
+      // Always return current profile data
+      $profile = UserProfile::getProfileInfo();
+
+      return ApiResponse::success(
+        new UserProfileResource($profile),
+        __('response.success.update', ['item' => 'User Data'])
+      );
     } catch (\Throwable $e) {
 
-      Log::error('User update failed', [
-        'user_id' => auth()->id(),
-        'error'   => $e->getMessage(),
-      ]);
+      // Log::error('User update failed', [
+      //   'user_id' => auth()->id(),
+      //   'error'   => $e->getMessage(),
+      // ]);
 
-      return ApiResponse::error(__('response.error.update', ['item' => 'User Data']), 500, null);
+      return ApiResponse::error(
+        __('response.error.update', ['item' => 'User Data']),
+        400
+      );
     }
   }
+
+
 
   public function fetchUserAddress(): JsonResponse
   {
