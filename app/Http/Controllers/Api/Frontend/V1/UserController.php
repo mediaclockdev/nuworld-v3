@@ -59,6 +59,7 @@ class UserController extends Controller
 
   public function fetchUserAddress(): JsonResponse
   {
+    dd(auth()->user());
     $country = Country::find(config('defaults.country_id'));
     // pd($country);
     $data = [
