@@ -34,7 +34,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/search-by-product-items', 'searchByProductItems')->name('search.by.product.items');
     Route::post('/apply-pincode', 'applyPincode')->name('apply.pincode');
     Route::get('/products-autocomplete',  'autocomplete')->name('products.autocomplete');
-    Route::get('/products/search', 'search')->name('products.search');
+    Route::get('/products-search', 'search')->name('products.search');
+    Route::get('/attribute-options', 'attributeOptions')->name('attribute.options');
     Route::post('/products/resolve-variant', 'resolveVariant')->name('products.resolve-variant'); // optional
 
   });

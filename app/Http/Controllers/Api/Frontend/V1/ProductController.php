@@ -13,17 +13,24 @@ use App\Http\Resources\Api\Frontend\ProductResource;
 use App\Http\Resources\Api\Frontend\ProductReviewResource;
 use App\Models\Pincode;
 use App\Models\Product;
+use App\Models\ProductAttribute;
+use App\Models\ProductCategory;
 use App\Models\ProductVariant;
 use App\Services\Frontend\ProductCardService;
 use App\Services\Frontend\ProductService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Vinkla\Hashids\Facades\Hashids;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
   protected int $candidateLimit = 50; // how many candidates to fetch to score (autocomplete)
   protected int $autocompleteLimit = 8; // final suggestions to return
+  protected int $facetSampleLimit = 500;   // sample size for facets
+  protected int $facetCacheTtl = 30;       // seconds
+
   public function __construct(protected ProductService $productService, protected ProductCardService $productCardService) {}
 
   public function bestSellingProducts()
@@ -384,70 +391,7 @@ class ProductController extends Controller
    * Full search (paginated) for mobile search results page
    * GET /api/v1/products/search?q=...&page=1&per_page=12&min_price=&max_price=&sort=
    */
-  public function search(Request $request)
-  {
-    ifApiTokenExists();
-    $q = trim((string)$request->query('q', ''));
-    $page = max(1, (int)$request->query('page', 1));
-    $perPage = min(100, max(8, (int)$request->query('per_page', 12)));
 
-    $query = ProductVariant::query()
-      ->with(['product:id,name,category_id', 'product.category:id,title', 'galleries', 'inventory', 'variantReviews'])
-      ->where('status', 1);
-
-    if ($q !== '') {
-      $searchQuery = strtolower(preg_replace('/\s+/', ' ', $q));
-      $terms = array_filter(explode(' ', $searchQuery));
-      $query->where(function ($qq) use ($terms) {
-        foreach ($terms as $t) {
-          $term = '%' . $t . '%';
-          $qq->orWhere('sku', 'like', $term)
-            ->orWhere('name', 'like', $term)
-            ->orWhereHas('product', fn($qp) => $qp->where('name', 'like', $term));
-        }
-      });
-    }
-
-    // price filter
-    if ($request->filled('min_price') || $request->filled('max_price')) {
-      $min = $request->query('min_price', null);
-      $max = $request->query('max_price', null);
-      if ($min !== null && $max !== null) {
-        $query->whereRaw('COALESCE(sale_price, regular_price) BETWEEN ? AND ?', [$min, $max]);
-      } elseif ($min !== null) {
-        $query->whereRaw('COALESCE(sale_price, regular_price) >= ?', [$min]);
-      } elseif ($max !== null) {
-        $query->whereRaw('COALESCE(sale_price, regular_price) <= ?', [$max]);
-      }
-    }
-
-    // sorting shorthand
-    $sort = $request->query('sort', 'most-recent');
-    if ($sort === 'lowest-price') {
-      $query->orderByRaw('COALESCE(sale_price, regular_price) asc');
-    } elseif ($sort === 'highest-price') {
-      $query->orderByRaw('COALESCE(sale_price, regular_price) desc');
-    } else {
-      $query->orderByDesc('created_at');
-    }
-
-    $paginator = $query->paginate($perPage, ['*'], 'page', $page);
-
-    $data = ProductResource::collection(collect($paginator->items()))->resolve();
-
-    return response()->json([
-      'success' => true,
-      'payload' => [
-        'data' => $data,
-        'meta' => [
-          'total' => $paginator->total(),
-          'per_page' => $paginator->perPage(),
-          'current_page' => $paginator->currentPage(),
-          'last_page' => $paginator->lastPage(),
-        ]
-      ]
-    ]);
-  }
 
   protected function fetchVariantsMatchingAllTerms(array $terms)
   {
@@ -503,5 +447,329 @@ class ProductController extends Controller
       ->limit($this->candidateLimit);
 
     return $query->get();
+  }
+
+  public function attributeOptions(Request $request)
+  {
+    ifApiTokenExists();
+    $mode = $request->query('mode', 'contextual'); // 'full' or 'contextual'
+    if ($mode === 'full') {
+      $attrs = ProductAttribute::where('status', 1)->with(['values' => function ($q) {
+        $q->orderBy('sequence');
+      }])->orderBy('sequence')->get();
+      return response()->json(['success' => true, 'mode' => 'full', 'payload' => ['attributes' => $attrs]]);
+    }
+
+    // contextual: build a similar variant query to web (lightweight)
+    $q = trim((string)$request->query('q', ''));
+    $categorySlug = $request->query('category_slug', null);
+    $limitScan = (int) $request->query('limit_variants_scan', 500);
+
+    $variantQuery = ProductVariant::query()->where('status', 1);
+
+    if ($q !== '') {
+      $terms = array_filter(explode(' ', strtolower(preg_replace('/\s+/', ' ', $q))));
+      foreach ($terms as $term) {
+        $wild = "%$term%";
+        $variantQuery->where(function ($qq) use ($wild) {
+          $qq->where('name', 'like', $wild)->orWhere('sku', 'like', $wild)->orWhereHas('product', fn($p) => $p->where('name', 'like', $wild));
+        });
+      }
+    }
+    if ($categorySlug) {
+      $cat = ProductCategory::where('slug', $categorySlug)->first();
+      if ($cat) {
+        $variantQuery->whereHas('product', fn($p) => $p->where('category_id', $cat->id));
+      }
+    }
+
+    $variantIds = $variantQuery->limit($limitScan)->pluck('id')->toArray();
+    if (empty($variantIds)) {
+      return response()->json(['success' => true, 'mode' => 'contextual', 'payload' => ['attributes' => []]]);
+    }
+
+    $attributeValueIds = DB::table('product_variant_attributes')->whereIn('product_variant_id', $variantIds)
+      ->pluck('attribute_value_id')->unique()->values()->toArray();
+
+    if (empty($attributeValueIds)) {
+      return response()->json(['success' => true, 'mode' => 'contextual', 'payload' => ['attributes' => []]]);
+    }
+
+    $attributes = ProductAttribute::where('status', 1)
+      ->with(['values' => function ($q) use ($attributeValueIds) {
+        $q->whereIn('id', $attributeValueIds)->orderBy('sequence');
+      }])
+      ->whereHas('values', fn($q) => $q->whereIn('id', $attributeValueIds))
+      ->orderBy('sequence')
+      ->get();
+
+    return response()->json(['success' => true, 'mode' => 'contextual', 'payload' => ['attributes' => $attributes]]);
+  }
+
+  public function search(Request $request)
+  {
+    ifApiTokenExists();
+    $q = trim((string)$request->query('q', ''));
+    $page = max(1, (int)$request->query('page', 1));
+    $perPage = min(48, max(8, (int)$request->query('per_page', 12)));
+    $minPrice = $request->query('min_price', null);
+    $maxPrice = $request->query('max_price', null);
+    $sort = $request->query('sort', 'most-recent');
+    $attributesInput = $request->query('attributes', []); // supports name-based or id-based
+    $categorySlug = $request->query('category_slug', null);
+
+    // Build the variant query — try to reuse your web productService if available
+    if (property_exists($this, 'productService') && method_exists($this->productService, 'buildVariantQuery')) {
+      $keywords = $q ? explode(' ', $q) : [];
+      $priceRange = [
+        'minPrice' => $minPrice,
+        'maxPrice' => $maxPrice,
+        'actualMinPrice' => $minPrice,
+        'actualMaxPrice' => $maxPrice
+      ];
+      $variantQuery = $this->productService->buildVariantQuery(null, $keywords, $priceRange, $request->query());
+    } else {
+      // Fallback simple query (mirrors earlier examples)
+      $variantQuery = ProductVariant::query()->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+        ->where('status', 1);
+
+      if ($q !== '') {
+        $terms = array_filter(explode(' ', strtolower(preg_replace('/\s+/', ' ', $q))));
+        foreach ($terms as $term) {
+          $wild = "%{$term}%";
+          $variantQuery->where(function ($qq) use ($wild) {
+            $qq->where('name', 'like', $wild)
+              ->orWhere('sku', 'like', $wild)
+              ->orWhereHas('product', fn($p) => $p->where('name', 'like', $wild));
+          });
+        }
+      }
+
+      if ($categorySlug) {
+        $cat = ProductCategory::where('slug', $categorySlug)->first();
+        if ($cat) {
+          $variantQuery->whereHas('product', fn($p) => $p->where('category_id', $cat->id));
+        }
+      }
+    }
+
+    // Apply attribute filters (supports both name-based and id-based)
+    $selectedAttributeValueIds = $this->applyAttributeFiltersToQuery($variantQuery, $attributesInput);
+
+    // Apply price filters
+    if ($minPrice !== null || $maxPrice !== null) {
+      if ($minPrice !== null && $maxPrice !== null) {
+        $variantQuery->whereRaw('COALESCE(sale_price, regular_price) BETWEEN ? AND ?', [(float)$minPrice, (float)$maxPrice]);
+      } elseif ($minPrice !== null) {
+        $variantQuery->whereRaw('COALESCE(sale_price, regular_price) >= ?', [(float)$minPrice]);
+      } elseif ($maxPrice !== null) {
+        $variantQuery->whereRaw('COALESCE(sale_price, regular_price) <= ?', [(float)$maxPrice]);
+      }
+    }
+
+    // Sorting
+    if ($sort === 'lowest-price') {
+      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
+    } elseif ($sort === 'highest-price') {
+      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
+    } elseif ($sort === 'top-rated') {
+      // ensure avg rating column is available, then order by it (NULL -> 0)
+      $variantQuery->withAvg('variantReviews', 'rating')
+        ->orderByRaw('COALESCE(variant_reviews_avg_rating, 0) desc');
+    } else {
+      // most-recent (default)
+      $variantQuery->orderByDesc('created_at');
+    }
+
+    // Paginate (DB pagination)
+    $paginator = $variantQuery->paginate($perPage, ['*'], 'page', $page);
+    $items = collect($paginator->items());
+    $products = ProductResource::collection($items)->resolve();
+
+    // Price range for UI (exact min/max across matching variants)
+    $priceRange = $this->computePriceRangeForQuery(clone $variantQuery);
+
+    // Facets (attributes + counts) — use contextual sample
+    $facets = $this->computeFacetsForQuery($variantQuery, $attributesInput, $this->facetSampleLimit, $this->facetCacheTtl);
+
+    return response()->json([
+      'success' => true,
+      'payload' => [
+        'data' => $products,
+        'meta' => [
+          'total' => $paginator->total(),
+          'per_page' => $paginator->perPage(),
+          'current_page' => $paginator->currentPage(),
+          'last_page' => $paginator->lastPage(),
+        ],
+        'price_range' => $priceRange,
+        'facets' => $facets,
+        'selected_filters' => $attributesInput
+      ]
+    ]);
+  }
+
+  /**
+   * Apply attribute filters to the query.
+   * Supports attributes by name: attributes[Color][]=Red
+   * and attributes by id:   attributes[13][]=21
+   *
+   * Returns array of selected attribute_value_ids (ints).
+   */
+  protected function applyAttributeFiltersToQuery($variantQuery, array $attributesInput): array
+  {
+    $selectedValueIds = [];
+
+    if (empty($attributesInput)) return $selectedValueIds;
+
+    foreach ($attributesInput as $attrKey => $values) {
+      if (is_numeric($attrKey)) {
+        // numeric attribute id -> values are value ids
+        $attrId = (int)$attrKey;
+        $valueIds = array_map('intval', (array)$values);
+        if (empty($valueIds)) continue;
+
+        $variantQuery->whereHas('variantAttributes', function ($q) use ($attrId, $valueIds) {
+          $q->where('attribute_id', $attrId)->whereIn('attribute_value_id', $valueIds);
+        });
+
+        $selectedValueIds = array_merge($selectedValueIds, $valueIds);
+      } else {
+        // attrKey is attribute name (string) -> values are attribute value strings
+        $attrName = trim($attrKey);
+        $valueStrings = array_map('trim', (array)$values);
+        if (empty($valueStrings)) continue;
+
+        // resolve to attribute id and value ids
+        $attribute = \App\Models\ProductAttribute::where('name', $attrName)->first();
+        if (! $attribute) continue;
+        $attrId = $attribute->id;
+        $valueRows = $attribute->values()->whereIn('value', $valueStrings)->get();
+        $valueIds = $valueRows->pluck('id')->toArray();
+        if (empty($valueIds)) continue;
+
+        $variantQuery->whereHas('variantAttributes', function ($q) use ($attrId, $valueIds) {
+          $q->where('attribute_id', $attrId)->whereIn('attribute_value_id', $valueIds);
+        });
+
+        $selectedValueIds = array_merge($selectedValueIds, $valueIds);
+      }
+    }
+
+    return array_map('intval', array_values(array_unique($selectedValueIds)));
+  }
+
+  /**
+   * Compute price range (min/max) for the query.
+   */
+  protected function computePriceRangeForQuery($query): array
+  {
+    $row = $query->selectRaw('MIN(COALESCE(sale_price, regular_price)) as min_price, MAX(COALESCE(sale_price, regular_price)) as max_price')->first();
+    $min = (float) ($row->min_price ?? 0);
+    $max = (float) ($row->max_price ?? 0);
+
+    return [
+      'minPrice' => $min,
+      'maxPrice' => $max,
+      'actualMinPrice' => $min,
+      'actualMaxPrice' => $max
+    ];
+  }
+
+  /**
+   * Compute facets (attributes with values + counts).
+   *
+   * Strategy:
+   *  - sample up to $limit variant IDs from the query
+   *  - aggregate counts from product_variant_attributes grouped by attribute/value
+   *  - join attribute/value meta and return counts
+   *
+   * $selectedAttributesInput is the original attributes param from client to mark selected.
+   */
+  protected function computeFacetsForQuery($variantQuery, array $selectedAttributesInput = [], int $limit = 500, int $cacheTtl = 30): array
+  {
+    // build cache key from normalized query + selected filters
+    $cacheKey = 'facets:' . md5(json_encode(request()->query()) . '|' . $limit);
+
+    return Cache::remember($cacheKey, $cacheTtl, function () use ($variantQuery, $selectedAttributesInput, $limit) {
+      // 1) get variant IDs sample
+      $variantIds = $variantQuery->limit($limit)->pluck('id')->toArray();
+      if (empty($variantIds)) return [];
+
+      // 2) aggregate counts per attribute/value
+      $rows = DB::table('product_variant_attributes')
+        ->select('attribute_id', 'attribute_value_id', DB::raw('COUNT(*) as cnt'))
+        ->whereIn('product_variant_id', $variantIds)
+        ->groupBy('attribute_id', 'attribute_value_id')
+        ->get();
+
+      if ($rows->isEmpty()) return [];
+
+      // 3) prepare map attribute_id => [value_id => count]
+      $counts = [];
+      foreach ($rows as $r) {
+        $counts[$r->attribute_id][$r->attribute_value_id] = (int)$r->cnt;
+      }
+
+      // 4) fetch attributes and only relevant values (preserving order)
+      $attributeIds = array_keys($counts);
+      $attrs = ProductAttribute::whereIn('id', $attributeIds)
+        ->where('status', 1)
+        ->with(['values' => function ($q) use ($counts) {
+          $valueIds = [];
+          foreach ($counts as $attrId => $map) {
+            $valueIds = array_merge($valueIds, array_keys($map));
+          }
+          $valueIds = array_unique($valueIds);
+          $q->whereIn('id', $valueIds)->orderBy('sequence');
+        }])->orderBy('sequence')->get();
+
+      // 5) build final facets array with counts and is_selected
+      $selectedValueIds = $this->normalizeSelectedValueIds($selectedAttributesInput); // ints
+
+      $facets = [];
+      foreach ($attrs as $attr) {
+        $values = [];
+        foreach ($attr->values as $val) {
+          $count = $counts[$attr->id][$val->id] ?? 0;
+          $values[] = [
+            'id' => $val->id,
+            'value' => $val->value,
+            'count' => $count,
+            'is_selected' => in_array($val->id, $selectedValueIds),
+          ];
+        }
+        $facets[] = [
+          'attribute_id' => $attr->id,
+          'attribute_name' => $attr->name,
+          'values' => $values
+        ];
+      }
+
+      return $facets;
+    });
+  }
+
+  /**
+   * Normalize selected attributes input (mix of names and ids) to a flat array of value ids.
+   */
+  protected function normalizeSelectedValueIds(array $attributesInput): array
+  {
+    $selected = [];
+
+    foreach ($attributesInput as $attrKey => $values) {
+      if (is_numeric($attrKey)) {
+        foreach ((array)$values as $v) {
+          $selected[] = (int)$v;
+        }
+      } else {
+        // name-based -> resolve to attribute values
+        $attribute = \App\Models\ProductAttribute::where('name', $attrKey)->first();
+        if (!$attribute) continue;
+        $rows = $attribute->values()->whereIn('value', (array)$values)->pluck('id')->toArray();
+        $selected = array_merge($selected, $rows);
+      }
+    }
+    return array_map('intval', array_values(array_unique($selected)));
   }
 }
