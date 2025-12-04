@@ -22,6 +22,8 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class ProductController extends Controller
 {
+  protected int $candidateLimit = 50; // how many candidates to fetch to score (autocomplete)
+  protected int $autocompleteLimit = 8; // final suggestions to return
   public function __construct(protected ProductService $productService, protected ProductCardService $productCardService) {}
 
   public function bestSellingProducts()
@@ -38,29 +40,7 @@ class ProductController extends Controller
     return ApiResponse::success(ProductResource::collection($data), __('response.success.fetch', ['item' => 'Latest Products']));
   }
 
-  public function searchByProductItems(Request $request)
-  {
-    ifApiTokenExists();
-    $productID = Hashids::decode($request->product_id)[0] ?? null;
-    //pd($productID);
-    // if (!$productID)
-    //   return ApiResponse::error(__('response.not_found', ['item' => 'Product']), 404);
-    $variants = ProductVariant::with('product', 'category') //->where('status', 1)
-      ->where('product_id', $productID)
-      ->get();
-    // ->groupBy('category_id')
-    // ->map(function ($group) {
-    //   return [
-    //     'category_name'  => $group->first()->category->name ?? '',
-    //     'category_image' => $group->first()->category->image ?? '',
-    //     'variant_count'  => $group->count()
-    //   ];
-    // })
-    // ->values();
-    pd($variants);
 
-    //return ApiResponse::success($variants, __('response.success.fetch', ['item' => 'Collections Found !!']));
-  }
 
   public function getProductVariants($productID)
   {
@@ -321,14 +301,14 @@ class ProductController extends Controller
     return ApiResponse::success($data, __('response.success.fetch', ['item' => 'Product']));
   }
 
-  public function searchProduct()
-  {
-    if (!request()->has('q'))
-      return ApiResponse::error(__('validation.required', ['attribute' => 'Keyword']), 404);
-    ifApiTokenExists();
-    $products = $this->productService->productSearch();
-    return ApiResponse::success($products, __('response.success.fetch', ['item' => 'Product']));
-  }
+  // public function searchProduct()
+  // {
+  //   if (!request()->has('q'))
+  //     return ApiResponse::error(__('validation.required', ['attribute' => 'Keyword']), 404);
+  //   ifApiTokenExists();
+  //   $products = $this->productService->productSearch();
+  //   return ApiResponse::success($products, __('response.success.fetch', ['item' => 'Product']));
+  // }
 
   public function applyPincode(Request $request)
   {
@@ -344,5 +324,184 @@ class ProductController extends Controller
     ifApiTokenExists();
     $data = $this->productService->filterProducts($request);
     return ApiResponse::success($data, __('response.success.fetch', ['item' => 'Products']));
+  }
+
+
+  public function autocomplete(Request $request)
+  {
+    //dd('here');
+    ifApiTokenExists();
+    $q = trim((string) $request->query('q', ''));
+
+    if ($q === '') {
+      return response()->json(['success' => true, 'data' => []]);
+    }
+
+    $searchQuery = strtolower(preg_replace('/\s+/', ' ', $q));
+    $searchTerms = array_filter(explode(' ', $searchQuery));
+
+    // 1) exact-matching step (matches all terms) — try to return fast if available
+    $exactVariants = $this->fetchVariantsMatchingAllTerms($searchTerms);
+    if ($exactVariants->isNotEmpty()) {
+      $results = $exactVariants->take($this->autocompleteLimit);
+      return response()->json(['success' => true, 'data' => ProductResource::collection($results)->resolve()]);
+    }
+
+    // 2) fuzzy step: fetch candidate set then score
+    $candidates = $this->fetchCandidatesAnyTerm($searchTerms);
+
+    if ($candidates->isEmpty()) {
+      return response()->json(['success' => true, 'data' => []]);
+    }
+
+    // Score candidates: similar_text on name & sku, boost prefix and exact matches
+    $scored = $candidates->map(function ($v) use ($searchQuery) {
+      $name = strtolower((string)($v->name ?? ''));
+      $sku = strtolower((string)($v->sku ?? ''));
+
+      similar_text($searchQuery, $name, $percentName);
+      similar_text($searchQuery, $sku, $percentSku);
+
+      $boost = 0;
+      if ($sku === $searchQuery) $boost += 40;
+      if ($name === $searchQuery) $boost += 30;
+      if (Str::startsWith($name, $searchQuery) || Str::startsWith($sku, $searchQuery)) $boost += 10;
+
+      $v->match_score = max($percentName, $percentSku) + $boost;
+
+      return $v;
+    });
+
+    $results = $scored->filter(fn($v) => ($v->match_score ?? 0) > 8)
+      ->sortByDesc('match_score')
+      ->values()
+      ->take($this->autocompleteLimit);
+
+    return response()->json(['success' => true, 'data' => ProductResource::collection($results)->resolve()]);
+  }
+
+  /**
+   * Full search (paginated) for mobile search results page
+   * GET /api/v1/products/search?q=...&page=1&per_page=12&min_price=&max_price=&sort=
+   */
+  public function search(Request $request)
+  {
+    ifApiTokenExists();
+    $q = trim((string)$request->query('q', ''));
+    $page = max(1, (int)$request->query('page', 1));
+    $perPage = min(100, max(8, (int)$request->query('per_page', 12)));
+
+    $query = ProductVariant::query()
+      ->with(['product:id,name,category_id', 'product.category:id,title', 'galleries', 'inventory', 'variantReviews'])
+      ->where('status', 1);
+
+    if ($q !== '') {
+      $searchQuery = strtolower(preg_replace('/\s+/', ' ', $q));
+      $terms = array_filter(explode(' ', $searchQuery));
+      $query->where(function ($qq) use ($terms) {
+        foreach ($terms as $t) {
+          $term = '%' . $t . '%';
+          $qq->orWhere('sku', 'like', $term)
+            ->orWhere('name', 'like', $term)
+            ->orWhereHas('product', fn($qp) => $qp->where('name', 'like', $term));
+        }
+      });
+    }
+
+    // price filter
+    if ($request->filled('min_price') || $request->filled('max_price')) {
+      $min = $request->query('min_price', null);
+      $max = $request->query('max_price', null);
+      if ($min !== null && $max !== null) {
+        $query->whereRaw('COALESCE(sale_price, regular_price) BETWEEN ? AND ?', [$min, $max]);
+      } elseif ($min !== null) {
+        $query->whereRaw('COALESCE(sale_price, regular_price) >= ?', [$min]);
+      } elseif ($max !== null) {
+        $query->whereRaw('COALESCE(sale_price, regular_price) <= ?', [$max]);
+      }
+    }
+
+    // sorting shorthand
+    $sort = $request->query('sort', 'most-recent');
+    if ($sort === 'lowest-price') {
+      $query->orderByRaw('COALESCE(sale_price, regular_price) asc');
+    } elseif ($sort === 'highest-price') {
+      $query->orderByRaw('COALESCE(sale_price, regular_price) desc');
+    } else {
+      $query->orderByDesc('created_at');
+    }
+
+    $paginator = $query->paginate($perPage, ['*'], 'page', $page);
+
+    $data = ProductResource::collection(collect($paginator->items()))->resolve();
+
+    return response()->json([
+      'success' => true,
+      'payload' => [
+        'data' => $data,
+        'meta' => [
+          'total' => $paginator->total(),
+          'per_page' => $paginator->perPage(),
+          'current_page' => $paginator->currentPage(),
+          'last_page' => $paginator->lastPage(),
+        ]
+      ]
+    ]);
+  }
+
+  protected function fetchVariantsMatchingAllTerms(array $terms)
+  {
+    if (empty($terms)) return collect();
+
+    // Query products that have variants matching all terms, then flatten variants like your Livewire
+    $products = Product::with(['category', 'variants.images.gallery'])
+      ->whereHas('variants', function ($q) use ($terms) {
+        foreach ($terms as $term) {
+          $q->where(function ($sub) use ($term) {
+            $sub->where('name', 'like', '%' . $term . '%')
+              ->orWhere('sku', 'like', '%' . $term . '%');
+          });
+        }
+      })
+      ->get();
+
+    $matched = $products->flatMap(function ($product) use ($terms) {
+      return $product->variants->filter(function ($variant) use ($terms) {
+        $name = strtolower($variant->name ?? '');
+        $sku = strtolower($variant->sku ?? '');
+        foreach ($terms as $term) {
+          $t = strtolower($term);
+          if (!str_contains($name, $t) && !str_contains($sku, $t)) return false;
+        }
+        return true;
+      })->map(function ($variant) use ($product) {
+        $variant->product_name = $product->name;
+        $variant->category_name = $product->category->title ?? 'No Category';
+        $variant->match_score = 100;
+        return $variant;
+      });
+    });
+
+    return $matched;
+  }
+
+  // Fetch candidate variants that match ANY term (limit)
+  protected function fetchCandidatesAnyTerm(array $terms)
+  {
+    if (empty($terms)) return collect();
+
+    $query = ProductVariant::with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+      ->where('status', 1)
+      ->where(function ($q) use ($terms) {
+        foreach ($terms as $t) {
+          $term = '%' . $t . '%';
+          $q->orWhere('sku', 'like', $term)
+            ->orWhere('name', 'like', $term);
+        }
+      })
+      ->orderByDesc('created_at')
+      ->limit($this->candidateLimit);
+
+    return $query->get();
   }
 }

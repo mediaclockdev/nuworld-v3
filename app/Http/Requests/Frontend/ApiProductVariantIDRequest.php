@@ -27,6 +27,7 @@ class ApiProductVariantIDRequest extends BaseRequest
     }
   }
 
+
   public function rules(): array
   {
     return [

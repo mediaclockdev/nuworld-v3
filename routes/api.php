@@ -29,10 +29,14 @@ Route::prefix('v1')->group(function () {
     Route::get('/latest-products/{limit?}', 'getLatestProducts');
     Route::get('/products/{productID}', 'getProductVariants')->name('product.variants');
     Route::get('/product/{sku}', 'getProductBySku')->name('product.slug');
-    Route::get('/product-search', 'searchProduct')->name('product.search');
+    //Route::get('/product-search', 'searchProduct')->name('product.search');
     Route::get('/products-with-filter', 'filterProducts')->name('product.filter');
     Route::post('/search-by-product-items', 'searchByProductItems')->name('search.by.product.items');
     Route::post('/apply-pincode', 'applyPincode')->name('apply.pincode');
+    Route::get('/products-autocomplete',  'autocomplete')->name('products.autocomplete');
+    Route::get('/products/search', 'search')->name('products.search');
+    Route::post('/products/resolve-variant', 'resolveVariant')->name('products.resolve-variant'); // optional
+
   });
   // Product routes
 
