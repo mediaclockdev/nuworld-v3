@@ -46,38 +46,43 @@ class ProductSeeder extends Seeder
     // Use nested categories to avoid collisions between same-named children under different parents
     $nested = $this->categoryData->getNestedCategories();
 
-    // color -> images map (kept from your previous seeder)
+    // <-- kept exactly as you requested -->
     $colorImages = [
-      'Red'   => ['Red1.webp', 'Red2.webp', 'Red3.webp'],
-      'Blue'  => ['Blue1.webp', 'Blue2.webp', 'Blue3.webp'],
+      'Red' => ['Red1.webp', 'Red2.webp', 'Red3.webp'],
+      'Blue' => ['Blue1.webp', 'Blue2.webp', 'Blue3.webp'],
       'Green' => ['Green1.webp', 'Green2.webp', 'Green3.webp'],
       'Black' => ['Black1.webp', 'Black2.webp', 'Black3.webp'],
     ];
 
-    // Create media gallery rows (idempotent firstOrCreate) and build map
     $mediaGalleryMap = [];
+
     foreach ($colorImages as $color => $images) {
       foreach ($images as $image) {
-        $media = MediaGallery::firstOrCreate(
-          ['file_name' => $image],
-          ['file_type' => 'image/jpeg']
-        );
+        $media = MediaGallery::create([
+          'file_name' => $image,
+          'file_type' => 'image/jpeg',
+        ]);
         $mediaGalleryMap[$color][] = $media->id;
       }
     }
 
-    // Build attribute maps from DB: attributeName => [valueName => id], and attributeName => attribute_id
-    $attributeMap = [];    // e.g. 'Color' => ['Red' => 1, ...]
-    $attributeMapIds = []; // e.g. 'Color' => 1
+    $attributes      = [];
+    $attributeMap    = [];
+    $attributeMapIds = [];
+
     $dbAttributes = ProductAttribute::all();
     foreach ($dbAttributes as $attr) {
+      $values                       = ProductAttributeValue::where('attribute_id', $attr->id)->pluck('value')->toArray();
+      $attributes[$attr->name]      = $values;
       $attributeMapIds[$attr->name] = $attr->id;
-      $vals = ProductAttributeValue::where('attribute_id', $attr->id)->pluck('value', 'id')->toArray();
-      $map = [];
-      foreach ($vals as $id => $name) {
-        $map[$name] = $id;
+      $attributeMap[$attr->name]    = [];
+
+      foreach ($values as $val) {
+        $value = ProductAttributeValue::where('attribute_id', $attr->id)->where('value', $val)->first();
+        if ($value) {
+          $attributeMap[$attr->name][$val] = $value->id;
+        }
       }
-      $attributeMap[$attr->name] = $map;
     }
 
     // Category => attributes mapping (exactly as you requested)
@@ -126,68 +131,96 @@ class ProductSeeder extends Seeder
 
           // Create 2 products per grandchild (as in your original seeder)
           for ($p = 1; $p <= 2; $p++) {
-            // ---- Fashion-Wireframes product content (keeps your original HTML) ----
-            $productName = "Fashion Wireframe - {$grandchild->title} Style {$p}";
+            // ---- PRODUCT name format: "Women Fashion Jackets Style 1" ----
+            $productName = "{$parentTitle} Fashion {$grandchild->title} Style {$p}";
 
-            // idempotent guard: skip if product with same name already exists
-            if (Product::where('name', $productName)->exists()) {
-              continue;
+            // If product already exists, use it (do not recreate)
+            $existingProduct = Product::where('name', $productName)->first();
+            if ($existingProduct) {
+              $product = $existingProduct;
+              $productSku = $product->sku;
+            } else {
+              // --- PRODUCT SKU generation per convention (robust) ---
+              $parentCode = strtoupper(substr($parentTitle, 0, 3));     // WOM / MEN
+
+              // remove parent words from grandchild title (e.g. "Women Jackets" -> "Jackets")
+              $catTitleClean = preg_replace('/\b' . preg_quote($parentTitle, '/') . '\b/i', '', $grandchild->title);
+              $catTitleClean = trim(preg_replace('/\s+/', ' ', $catTitleClean)); // normalize spaces
+              if ($catTitleClean === '') {
+                // fallback if removal emptied the title (defensive)
+                $catTitleClean = $grandchild->title;
+              }
+
+              // take first 3 alphanumeric chars as category code
+              $catCode = strtoupper(preg_replace('/[^A-Z0-9]/i', '', substr($catTitleClean, 0, 3)));
+              if ($catCode === '') {
+                $catCode = strtoupper(substr(preg_replace('/[^A-Z0-9]/', '', $grandchild->title), 0, 3)) ?: 'CAT';
+              }
+
+              $styleCode = "STYLE{$p}";
+              $baseProductSku = "{$parentCode}-{$catCode}-{$styleCode}";
+
+              // ensure SKU uniqueness: append numeric suffix if needed
+              $productSku = $baseProductSku;
+              $suffix = 1;
+              while (Product::where('sku', $productSku)->exists()) {
+                $productSku = $baseProductSku . '-' . $suffix;
+                $suffix++;
+              }
+
+              $product = Product::create([
+                'name' => $productName,
+                'sku' => $productSku,
+                'category_id' => $grandchild->id,
+                'type' => 'variable',
+                'status' => 1,
+                'product_details' => "
+                                  <div class=\"d-grid grid-2\">
+                                      <div>
+                                          <h4 class=\"font18 c--blackc fw-medium m-0\">Brand</h4>
+                                          <p class=\"c--gry font18 m-0\">Mayuri Fashion</p>
+                                      </div>
+                                      <div>
+                                          <h4 class=\"font18 c--blackc fw-medium m-0\">Category</h4>
+                                          <p class=\"c--gry font18 m-0\">{$grandchild->title}</p>
+                                      </div>
+                                      <div>
+                                          <h4 class=\"font18 c--blackc fw-medium m-0\">Style</h4>
+                                          <p class=\"c--gry font18 m-0\">Style {$p}</p>
+                                      </div>
+                                      <div>
+                                          <h4 class=\"font18 c--blackc fw-medium m-0\">Return Policy</h4>
+                                          <p class=\"c--gry font18 m-0\">7-day return policy</p>
+                                      </div>
+                                      <div>
+                                          <h4 class=\"font18 c--blackc fw-medium m-0\">Fit</h4>
+                                          <p class=\"c--gry font18 m-0\">Regular Fit</p>
+                                      </div>
+                                      <div>
+                                          <h4 class=\"font18 c--blackc fw-medium m-0\">Made In</h4>
+                                          <p class=\"c--gry font18 m-0\">India</p>
+                                      </div>
+                                  </div>
+                              ",
+                'specifications' => "Category: {$grandchild->title}. Material: Assorted Fabrics. Available Colors: Red, Blue, Green, Brown. Sizes: XS, S, M, L, XL (where applicable).",
+                'care_maintenance' => "Follow garment care label. Machine wash cold, gentle cycle. Do not bleach. Dry flat.",
+                'warranty' => "30-day manufacturer warranty on defects.",
+              ]);
             }
 
-            $product = Product::create([
-              'name' => $productName,
-              'sku' => strtoupper(Str::slug($productName . '-' . substr(uniqid(), -4))),
-              'category_id' => $grandchild->id,
-              'type' => 'variable',
-              'status' => 1,
-              'product_details' => "
-                                <div class=\"d-grid grid-2\">
-                                    <div>
-                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Brand</h4>
-                                        <p class=\"c--gry font18 m-0\">Mayuri Fashion</p>
-                                    </div>
-                                    <div>
-                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Category</h4>
-                                        <p class=\"c--gry font18 m-0\">{$grandchild->title}</p>
-                                    </div>
-                                    <div>
-                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Style</h4>
-                                        <p class=\"c--gry font18 m-0\">Style {$p}</p>
-                                    </div>
-                                    <div>
-                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Return Policy</h4>
-                                        <p class=\"c--gry font18 m-0\">7-day return policy</p>
-                                    </div>
-                                    <div>
-                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Fit</h4>
-                                        <p class=\"c--gry font18 m-0\">Regular Fit</p>
-                                    </div>
-                                    <div>
-                                        <h4 class=\"font18 c--blackc fw-medium m-0\">Made In</h4>
-                                        <p class=\"c--gry font18 m-0\">India</p>
-                                    </div>
-                                </div>
-                            ",
-              'specifications' => "Category: {$grandchild->title}. Material: Assorted Fabrics. Available Colors: Red, Blue, Green, Brown. Sizes: XS, S, M, L, XL (where applicable).",
-              'care_maintenance' => "Follow garment care label. Machine wash cold, gentle cycle. Do not bleach. Dry flat.",
-              'warranty' => "30-day manufacturer warranty on defects.",
-            ]);
-
-            // Store Product Filter attributes (unchanged) - idempotent creation
-            $allAttributes = ProductAttribute::all();
+            // Store Product Filter attributes (unchanged)
+            $allAttributes    = ProductAttribute::all();
             $filterAttributes = $allAttributes->pluck('name')->toArray();
             foreach ($filterAttributes as $filterAttrName) {
               if (isset($attributeMapIds[$filterAttrName])) {
-                ProductFilter::firstOrCreate([
+                ProductFilter::create([
                   'product_id'   => $product->id,
                   'attribute_id' => $attributeMapIds[$filterAttrName],
                 ]);
               }
             }
 
-            //
-            // --- Resolve attributes for this category (path -> namespaced -> title -> default)
-            //
+            // ---- Resolve attributes for this category (path -> namespaced -> title -> default)
             $pathKey = "{$parentTitle} > {$childTitle} > {$grandchild->title}";
             $namespacedKey = "{$parentTitle} {$grandchild->title}"; // e.g. "Women Jackets" or "Men Jackets"
 
@@ -224,10 +257,14 @@ class ProductSeeder extends Seeder
                 $valuesForAttrs['Color'] = array_slice($vals, 0, 3);
               } else {
                 // create a single default variant and continue
+                // PRODUCT SKU is $productSku, use it to build variant sku token
+                $variantSkuTokenParts = ['DEF'];
+                $variantSku = $productSku . '-' . implode('-', $variantSkuTokenParts);
+
                 $variant = ProductVariant::create([
                   'product_id' => $product->id,
                   'name' => $productName . ' Variant',
-                  'sku' => strtoupper(Str::slug($productName . '-' . substr(uniqid(), -4))),
+                  'sku' => $variantSku,
                   'regular_price' => $regularPrice = rand(500, 5000),
                   'sale_price' => rand(400, max(401, $regularPrice - 1)),
                 ]);
@@ -244,6 +281,17 @@ class ProductSeeder extends Seeder
                     'media_gallery_id' => $randomMediaId,
                     'is_default' => 1
                   ]);
+                }
+
+                foreach (['Color', 'Material', 'Size'] as $maybe) {
+                  if (!empty($attributeMap[$maybe])) {
+                    $firstVal = array_values($attributeMap[$maybe])[0];
+                    ProductVariantAttribute::create([
+                      'product_variant_id' => $variant->id,
+                      'attribute_id' => $attributeMapIds[$maybe],
+                      'attribute_value_id' => $firstVal,
+                    ]);
+                  }
                 }
 
                 Inventory::create([
@@ -271,15 +319,33 @@ class ProductSeeder extends Seeder
             foreach ($productCombinations as $combo) {
               // Build readable variant name from chosen values
               $variantPieces = [];
+              $variantSkuParts = [];
               foreach ($combo as $attrName => $val) {
                 $variantPieces[] = $val['value'];
+                // take first 3 chars uppercase for SKU token (non-empty)
+                $clean = preg_replace('/[^A-Za-z0-9]/', '', strtoupper(substr($val['value'], 0, 3)));
+                $variantSkuParts[] = $clean ?: 'X';
               }
-              $variantName = $productName . ' ' . implode(' ', $variantPieces);
+
+              // FINAL VARIANT NAME format:
+              // "Women Fashion Jackets - Style 1 Red M Cotton"
+              $variantName = "{$parentTitle} Fashion {$grandchild->title} - Style {$p} " . implode(' ', $variantPieces);
+
+              // VARIANT SKU: PRODUCT-SKU + '-' + tokens (e.g. WOM-JAC-STYLE1-RED-M-COT)
+              $baseVariantSku = $productSku . '-' . implode('-', $variantSkuParts);
+
+              // ensure variant SKU uniqueness
+              $variantSku = $baseVariantSku;
+              $vSuffix = 1;
+              while (ProductVariant::where('sku', $variantSku)->exists()) {
+                $variantSku = $baseVariantSku . '-' . $vSuffix;
+                $vSuffix++;
+              }
 
               $variant = ProductVariant::create([
                 'product_id' => $product->id,
                 'name' => $variantName,
-                'sku' => strtoupper(Str::slug($variantName . '-' . substr(uniqid(), -4))),
+                'sku' => $variantSku,
                 'regular_price' => $regularPrice = rand(1100, 11000),
                 'sale_price' => rand(1000, $regularPrice - 1),
               ]);
