@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Hash;
 use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
+
 
 class ProductController extends Controller
 {
@@ -506,6 +508,109 @@ class ProductController extends Controller
     return response()->json(['success' => true, 'mode' => 'contextual', 'payload' => ['attributes' => $attributes]]);
   }
 
+  // public function search(Request $request)
+  // {
+  //   ifApiTokenExists();
+  //   $q = trim((string)$request->query('q', ''));
+  //   $page = max(1, (int)$request->query('page', 1));
+  //   $perPage = min(48, max(8, (int)$request->query('per_page', 12)));
+  //   $minPrice = $request->query('min_price', null);
+  //   $maxPrice = $request->query('max_price', null);
+  //   $sort = $request->query('sort', 'most-recent');
+  //   $attributesInput = $request->query('attributes', []); // supports name-based or id-based
+  //   $categorySlug = $request->query('category_slug', null);
+
+  //   // Build the variant query — try to reuse your web productService if available
+  //   if (property_exists($this, 'productService') && method_exists($this->productService, 'buildVariantQuery')) {
+  //     $keywords = $q ? explode(' ', $q) : [];
+  //     $priceRange = [
+  //       'minPrice' => $minPrice,
+  //       'maxPrice' => $maxPrice,
+  //       'actualMinPrice' => $minPrice,
+  //       'actualMaxPrice' => $maxPrice
+  //     ];
+  //     $variantQuery = $this->productService->buildVariantQuery(null, $keywords, $priceRange, $request->query());
+  //   } else {
+  //     // Fallback simple query (mirrors earlier examples)
+  //     $variantQuery = ProductVariant::query()->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+  //       ->where('status', 1);
+
+  //     if ($q !== '') {
+  //       $terms = array_filter(explode(' ', strtolower(preg_replace('/\s+/', ' ', $q))));
+  //       foreach ($terms as $term) {
+  //         $wild = "%{$term}%";
+  //         $variantQuery->where(function ($qq) use ($wild) {
+  //           $qq->where('name', 'like', $wild)
+  //             ->orWhere('sku', 'like', $wild)
+  //             ->orWhereHas('product', fn($p) => $p->where('name', 'like', $wild));
+  //         });
+  //       }
+  //     }
+
+  //     if ($categorySlug) {
+  //       $cat = ProductCategory::where('slug', $categorySlug)->first();
+  //       if ($cat) {
+  //         $variantQuery->whereHas('product', fn($p) => $p->where('category_id', $cat->id));
+  //       }
+  //     }
+  //   }
+
+  //   // Apply attribute filters (supports both name-based and id-based)
+  //   $selectedAttributeValueIds = $this->applyAttributeFiltersToQuery($variantQuery, $attributesInput);
+
+  //   // Apply price filters
+  //   if ($minPrice !== null || $maxPrice !== null) {
+  //     if ($minPrice !== null && $maxPrice !== null) {
+  //       $variantQuery->whereRaw('COALESCE(sale_price, regular_price) BETWEEN ? AND ?', [(float)$minPrice, (float)$maxPrice]);
+  //     } elseif ($minPrice !== null) {
+  //       $variantQuery->whereRaw('COALESCE(sale_price, regular_price) >= ?', [(float)$minPrice]);
+  //     } elseif ($maxPrice !== null) {
+  //       $variantQuery->whereRaw('COALESCE(sale_price, regular_price) <= ?', [(float)$maxPrice]);
+  //     }
+  //   }
+
+  //   // Sorting
+  //   if ($sort === 'lowest-price') {
+  //     $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
+  //   } elseif ($sort === 'highest-price') {
+  //     $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
+  //   } elseif ($sort === 'top-rated') {
+  //     // ensure avg rating column is available, then order by it (NULL -> 0)
+  //     $variantQuery->withAvg('variantReviews', 'rating')
+  //       ->orderByRaw('COALESCE(variant_reviews_avg_rating, 0) desc');
+  //   } else {
+  //     // most-recent (default)
+  //     $variantQuery->orderByDesc('created_at');
+  //   }
+
+  //   // Paginate (DB pagination)
+  //   $paginator = $variantQuery->paginate($perPage, ['*'], 'page', $page);
+  //   $items = collect($paginator->items());
+  //   $products = ProductResource::collection($items)->resolve();
+
+  //   // Price range for UI (exact min/max across matching variants)
+  //   $priceRange = $this->computePriceRangeForQuery(clone $variantQuery);
+
+  //   // Facets (attributes + counts) — use contextual sample
+  //   $facets = $this->computeFacetsForQuery($variantQuery, $attributesInput, $this->facetSampleLimit, $this->facetCacheTtl);
+
+  //   return response()->json([
+  //     'success' => true,
+  //     'payload' => [
+  //       'data' => $products,
+  //       'meta' => [
+  //         'total' => $paginator->total(),
+  //         'per_page' => $paginator->perPage(),
+  //         'current_page' => $paginator->currentPage(),
+  //         'last_page' => $paginator->lastPage(),
+  //       ],
+  //       'price_range' => $priceRange,
+  //       'facets' => $facets,
+  //       'selected_filters' => $attributesInput
+  //     ]
+  //   ]);
+  // }
+
   public function search(Request $request)
   {
     ifApiTokenExists();
@@ -518,7 +623,7 @@ class ProductController extends Controller
     $attributesInput = $request->query('attributes', []); // supports name-based or id-based
     $categorySlug = $request->query('category_slug', null);
 
-    // Build the variant query — try to reuse your web productService if available
+    // Build the variant query — reuse your productService if available
     if (property_exists($this, 'productService') && method_exists($this->productService, 'buildVariantQuery')) {
       $keywords = $q ? explode(' ', $q) : [];
       $priceRange = [
@@ -567,40 +672,98 @@ class ProductController extends Controller
       }
     }
 
-    // Sorting
+    // ---------- Decide non-top-rated ordering early (we will handle top-rated specially) ----------
     if ($sort === 'lowest-price') {
+      // We'll still use the two-step ordering later; keeping this here to influence pluck order if any
       $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
     } elseif ($sort === 'highest-price') {
       $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
-    } elseif ($sort === 'top-rated') {
-      // ensure avg rating column is available, then order by it (NULL -> 0)
-      $variantQuery->withAvg('variantReviews', 'rating')
-        ->orderByRaw('COALESCE(variant_reviews_avg_rating, 0) desc');
     } else {
-      // most-recent (default)
+      // do not set final ordering for top-rated here; top-rated handled in second step
       $variantQuery->orderByDesc('created_at');
     }
 
-    // Paginate (DB pagination)
-    $paginator = $variantQuery->paginate($perPage, ['*'], 'page', $page);
-    $items = collect($paginator->items());
-    $products = ProductResource::collection($items)->resolve();
+    // ---------------- TWO-STEP: get matching variant IDs (respect all filters) ----------------
+    // cap to avoid huge memory usage; increase if your app needs it
+    $maxIdsCap = 5000;
+    $matchingIds = (clone $variantQuery)->limit($maxIdsCap)->pluck('id')->toArray();
 
-    // Price range for UI (exact min/max across matching variants)
-    $priceRange = $this->computePriceRangeForQuery(clone $variantQuery);
+    // If no matches, return empty paginated response
+    if (empty($matchingIds)) {
+      $emptyPaginator = new LengthAwarePaginator(
+        collect([]),
+        0,
+        $perPage,
+        $page,
+        ['path' => $request->url(), 'query' => $request->query()]
+      );
 
-    // Facets (attributes + counts) — use contextual sample
+      return response()->json([
+        'success' => true,
+        'payload' => [
+          'data' => [],
+          'meta' => [
+            'total' => 0,
+            'per_page' => $perPage,
+            'current_page' => $page,
+            'last_page' => 0,
+          ],
+          'price_range' => $this->computePriceRangeForQuery(clone $variantQuery),
+          'facets' => [],
+          'selected_filters' => $attributesInput
+        ]
+      ]);
+    }
+
+    // ---------------- Build aggregated ratings subquery for these IDs ----------------
+    $ratingsSub = DB::table('product_reviews')
+      ->select('variant_id', DB::raw('AVG(rating) as avg_rating'), DB::raw('COUNT(*) as review_count'))
+      ->whereIn('variant_id', $matchingIds)
+      ->groupBy('variant_id');
+
+    // ---------------- Build ordered query joining the ratings subquery ----------------
+    $orderedQuery = ProductVariant::query()
+      ->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+      ->whereIn('product_variants.id', $matchingIds)
+      ->leftJoinSub($ratingsSub, 'rv', 'rv.variant_id', 'product_variants.id')
+      ->select('product_variants.*', DB::raw('COALESCE(rv.avg_rating, 0) as avg_rating'), DB::raw('COALESCE(rv.review_count, 0) as review_count'));
+
+    // Apply final ordering depending on requested sort
+    if ($sort === 'top-rated') {
+      $orderedQuery->orderByRaw('avg_rating DESC');
+      $orderedQuery->orderByRaw('review_count DESC');
+      $orderedQuery->orderByDesc('product_variants.created_at');
+    } elseif ($sort === 'lowest-price') {
+      $orderedQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
+    } elseif ($sort === 'highest-price') {
+      $orderedQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
+    } else {
+      $orderedQuery->orderByDesc('product_variants.created_at');
+    }
+
+    // Manual pagination on ordered query
+    $totalMatching = count($matchingIds);
+    $offset = ($page - 1) * $perPage;
+    $orderedItems = $orderedQuery->skip($offset)->take($perPage)->get();
+
+    // Convert to ProductResource (no change to the resource)
+    $products = ProductResource::collection($orderedItems)->resolve();
+
+    // Price range and facets calculated from original variantQuery context
+    $priceRange = $this->computePriceRangeForQuery((clone $variantQuery));
     $facets = $this->computeFacetsForQuery($variantQuery, $attributesInput, $this->facetSampleLimit, $this->facetCacheTtl);
+
+    $lastPage = (int) ceil($totalMatching / $perPage);
 
     return response()->json([
       'success' => true,
       'payload' => [
         'data' => $products,
         'meta' => [
-          'total' => $paginator->total(),
-          'per_page' => $paginator->perPage(),
-          'current_page' => $paginator->currentPage(),
-          'last_page' => $paginator->lastPage(),
+          'total' => $totalMatching,
+          'per_page' => $perPage,
+          'current_page' => $page,
+          'last_page' => $lastPage,
         ],
         'price_range' => $priceRange,
         'facets' => $facets,
