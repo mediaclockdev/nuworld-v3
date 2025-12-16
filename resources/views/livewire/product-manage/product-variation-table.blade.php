@@ -87,7 +87,8 @@
               </td>
               <td class="nowrap">{{ $product->sku }}</td>
               <td class="nowrap">
-                <span> &#8377; {{ $product->regular_price }}</span>
+                <span> {{ displayPrice($product->regular_price) }}</span>
+
               </td>
               <td class="">
                 <div class="product_media_stack">
