@@ -34,7 +34,7 @@
         <div class="mb-3 required">
           <label for="sku" class="form-label">SKU</label>
           <input type="text" name="sku" id="sku" class="form-control uppercase-slug"
-            value="{{ $productVariation->sku ?? '' }}" readonly>
+            value="{{ $productVariation->sku ?? '' }}">
           <div id="sku-error-container"></div>
         </div>
       </div>

@@ -12,7 +12,7 @@
       <div class="mb-3 required">
         <label for="variant_name" class="form-label">Base SKU</label>
         <input type="text" name="base_product_sku" id="base_product_sku" class="form-control uppercase-slug"
-          value="{{ $product->sku ?? '' }}" readonly>
+          value="{{ $product->sku ?? '' }}">
         <div id="variant_name-error-container"></div>
       </div>
     </div>

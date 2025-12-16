@@ -30,14 +30,14 @@
     <div class="col-md-6">
       <div class="mb-3 required">
         <label for="variant_name" class="form-label">Variant Name</label>
-        <input type="text" name="variant_name" id="variant_name" class="form-control" value="" readonly>
+        <input type="text" name="variant_name" id="variant_name" class="form-control" value="">
         <div class="error-container" id="variant_name-error"></div>
       </div>
     </div>
     <div class="col-md-6">
       <div class="mb-3 required">
         <label for="sku" class="form-label">SKU</label>
-        <input type="text" name="sku" id="sku" class="form-control uppercase-slug" value="" readonly>
+        <input type="text" name="sku" id="sku" class="form-control uppercase-slug" value="">
         <div class="error-container" id="sku-error"></div>
       </div>
     </div>
