@@ -4,7 +4,7 @@
       <div class="mb-3 required">
         <label for="variant_name" class="form-label">Product Name</label>
         <input type="text" name="base_product_name" id="base_product_name" class="form-control"
-          value="{{ $product->name ?? '' }}" readonly>
+          value="{{ $product->name ?? '' }}">
         <div id="variant_name-error-container"></div>
       </div>
     </div>
@@ -25,17 +25,17 @@
               <h4 class="header-title mb-0">Product Filter Attributes</h4>
             </div>
             <div class="card-body">
-                <div class="col-md-6">
-                  <select class="form-select multiple-attribute-select" name="attribute_ids[]" multiple>
-                    <option value="">Select Attributes</option>
-                    @foreach ($attributes as $attribute)
-                      <option value=" {{ Hashids::encode($attribute->id) }}" data-attribute-name="{{ $attribute->name }}">
-                        {{ $attribute->name }}
-                      </option>
-                    @endforeach
-                  </select>
-                </div>
+              <div class="col-md-6">
+                <select class="form-select multiple-attribute-select" name="attribute_ids[]" multiple>
+                  <option value="">Select Attributes</option>
+                  @foreach ($attributes as $attribute)
+                    <option value=" {{ Hashids::encode($attribute->id) }}" data-attribute-name="{{ $attribute->name }}">
+                      {{ $attribute->name }}
+                    </option>
+                  @endforeach
+                </select>
               </div>
+            </div>
           </div>
         </div>
       </div>
@@ -108,21 +108,21 @@
     $(document).ready(function() {
 
       $('.multiple-attribute-select').select2({
-          'placeholder': 'Select Attributes',
+        'placeholder': 'Select Attributes',
       });
 
       // Only destroy Select2 instances where it is already initialized
-    $('.select2').each(function() {
+      $('.select2').each(function() {
         if ($(this).data('select2')) {
-            $(this).select2('destroy');
+          $(this).select2('destroy');
         }
-    })
+      })
 
       initAttributeRowEvents();
       $('#otherAttributesContainer').empty();
       if (variationCount === 0) {
-          $('#addAttributeBtn').trigger('click');
-          variationCount++;
+        $('#addAttributeBtn').trigger('click');
+        variationCount++;
       }
     });
 
@@ -132,9 +132,9 @@
         const newRow = $(template).appendTo('#otherAttributesContainer');
         // Destroy any existing Select2 instance on the new row if present
         newRow.find('.select2').each(function() {
-            if ($(this).data('select2')) {
-                $(this).select2('destroy');
-            }
+          if ($(this).data('select2')) {
+            $(this).select2('destroy');
+          }
         });
         initAttributeRow(newRow);
       });
@@ -145,7 +145,7 @@
 
       // Delegate change event to dynamically added select2 elements
       $('#otherAttributesContainer').on('change', '.select2', function() {
-          $(this).valid();
+        $(this).valid();
       });
     }
 
@@ -159,7 +159,7 @@
         const isColor = attributeName === 'Color';
         const valuesSelect = row.find('.attribute-values-select');
         valuesSelect.empty().append($('<option>', {
-            value: ''
+          value: ''
         }).prop('disabled', true).prop('hidden', true));
 
         if (!attributeId) return;
