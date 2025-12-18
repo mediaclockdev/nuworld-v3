@@ -19,12 +19,15 @@ class ProductResource extends JsonResource
     $salePrice = findSalePrice($this->id);
     $isDiscounted = !$salePrice['regular_price_true'];
     $averageRating = $this->variantReviews()->avg('rating');
+    $attributes = $this->attribute_details ?? [];
 
     return [
       'id' => Hashids::encode($this->id),
       'product_id' => Hashids::encode($this->product_id),
       'name' => $this->name ?? '',
+      'product_name' => $this->product->name ?? '',
       'product_sku' => $this->sku ?? '',
+      'attributes' => $attributes,
       'price' => displayPrice($salePrice['display_price']),
       'old_price' => $isDiscounted ? displayPrice($salePrice['regular_price']) : null,
       'is_discount' => $isDiscounted,

@@ -18,7 +18,7 @@ class ProductDetailsResource extends JsonResource
     $salePrice = findSalePrice($this->id);
     $isDiscounted = !$salePrice['regular_price_true'];
     $averageRating = $this->variantReviews()->avg('rating');
-
+    $attributes = $this->attribute_details ?? [];
     // Safely collect all review images
     $reviewImages = collect($this->variantReviews)
       ->flatMap(function ($review) {
@@ -31,6 +31,7 @@ class ProductDetailsResource extends JsonResource
     return [
       'id' => Hashids::encode($this->id),
       'name' => $this->name ?? '',
+      'product_name' => $this->product->name ?? '',
       'product_sku' => $this->sku ?? '',
       'description' => $this->product->description ?? '',
       'price' => displayPrice($salePrice['display_price']),
@@ -51,6 +52,7 @@ class ProductDetailsResource extends JsonResource
       'all_review_images' => $reviewImages ?? [],
       'avg_rating' => $averageRating !== null ? round((float) $averageRating, 1) : 0.0,
       'total_rating' => $this->variantReviews()->count(),
+      'attributes' => $attributes
 
     ];
   }
