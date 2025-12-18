@@ -21,6 +21,7 @@ class ProductSeeder extends Seeder
 {
   public function __construct(protected FashionCategoryData $categoryData) {}
 
+  /* ================= CARTESIAN PRODUCT ================= */
   private function cartesianProduct(array $arrays): array
   {
     $result = [[]];
@@ -40,7 +41,7 @@ class ProductSeeder extends Seeder
   {
     $nested = $this->categoryData->getNestedCategories();
 
-    /* ---------------- COLOR IMAGES ---------------- */
+    /* ================= COLOR IMAGES ================= */
     $colorImages = [
       'Red'   => ['Red1.webp', 'Red2.webp', 'Red3.webp'],
       'Blue'  => ['Blue1.webp', 'Blue2.webp', 'Blue3.webp'],
@@ -59,12 +60,13 @@ class ProductSeeder extends Seeder
       }
     }
 
-    /* ---------------- ATTRIBUTE MAP ---------------- */
+    /* ================= ATTRIBUTE MAP ================= */
     $attributeMap = [];
     $attributeMapIds = [];
 
     foreach (ProductAttribute::all() as $attr) {
       $attributeMapIds[$attr->name] = $attr->id;
+
       foreach (
         ProductAttributeValue::where('attribute_id', $attr->id)->get()
         as $val
@@ -76,7 +78,7 @@ class ProductSeeder extends Seeder
       }
     }
 
-    /* ---------------- CATEGORY ATTRIBUTES ---------------- */
+    /* ================= CATEGORY ATTRIBUTES ================= */
     $categoryAttributeMap = [
       'Dresses'       => ['Color', 'Size'],
       'Tops'          => ['Color', 'Size'],
@@ -88,12 +90,12 @@ class ProductSeeder extends Seeder
       'Men Coats'     => ['Color', 'Size'],
       'Bags'          => ['Color', 'Bag Type'],
       'Belts'         => ['Color', 'Belt Size'],
-      'Sunglasses'    => ['Frame Colour', 'Lens Type'],
-      'Watches'       => ['Watch Type', 'Dial Colour'],
+      'Sunglasses'    => ['Frame Color', 'Lens Type'],
+      'Watches'       => ['Watch Type', 'Dial Color'],
       'default'       => ['Color', 'Size'],
     ];
 
-    /* ---------------- MAIN LOOP ---------------- */
+    /* ================= MAIN LOOP ================= */
     foreach ($nested as $parentTitle => $childrenMap) {
       $parent = ProductCategory::where('title', $parentTitle)->first();
       if (!$parent) continue;
@@ -121,9 +123,15 @@ class ProductSeeder extends Seeder
               $productSku = $product->sku;
             } else {
               $parentCode = strtoupper(substr($parentTitle, 0, 3));
-              $catTitleClean = preg_replace('/\b' . preg_quote($parentTitle, '/') . '\b/i', '', $grandchild->title);
+              $catTitleClean = preg_replace(
+                '/\b' . preg_quote($parentTitle, '/') . '\b/i',
+                '',
+                $grandchild->title
+              );
               $catTitleClean = trim(preg_replace('/\s+/', ' ', $catTitleClean));
-              $catCode = strtoupper(substr(preg_replace('/\W/', '', $catTitleClean ?: $grandchild->title), 0, 3));
+              $catCode = strtoupper(
+                substr(preg_replace('/\W/', '', $catTitleClean ?: $grandchild->title), 0, 3)
+              );
               $styleCode = "STYLE{$p}";
               $baseSku = "{$parentCode}-{$catCode}-{$styleCode}";
 
@@ -164,32 +172,19 @@ class ProductSeeder extends Seeder
 
             foreach ($this->cartesianProduct($valuesForAttrs) as $combo) {
 
-              /* ===== NEW SAFE LOGIC ===== */
+              /* ===== VARIANT BUILD (AUTO, SAFE) ===== */
               $variantNameParts = [];
               $variantSkuParts  = [];
               $attributeDetails = [];
 
               foreach ($combo as $attrName => $val) {
-
-                // NEW → JSON SNAPSHOT
                 $attributeDetails[$attrName] = $val['value'];
-
-                // SHORT NAME ONLY
-                if (in_array($attrName, [
-                  'Color',
-                  'Size',
-                  'Belt Size',
-                  'Dial Colour'
-                ])) {
-                  $variantNameParts[] = $val['value'];
-                }
-
+                $variantNameParts[] = $val['value'];
                 $variantSkuParts[] =
                   strtoupper(substr(preg_replace('/\W/', '', $val['value']), 0, 3));
               }
 
               $variantSku = $productSku . '-' . implode('-', $variantSkuParts);
-
               while (ProductVariant::where('sku', $variantSku)->exists()) {
                 $variantSku .= '-1';
               }
@@ -203,7 +198,7 @@ class ProductSeeder extends Seeder
                 'sale_price' => rand(800, 9000),
               ]);
 
-              /* ===== PIVOT ATTRIBUTES (UNCHANGED) ===== */
+              /* ===== PIVOT ATTRIBUTES ===== */
               foreach ($combo as $attrName => $val) {
                 ProductVariantAttribute::create([
                   'product_variant_id' => $variant->id,
@@ -212,7 +207,7 @@ class ProductSeeder extends Seeder
                 ]);
               }
 
-              /* ===== IMAGES (UNCHANGED) ===== */
+              /* ===== IMAGES (COLOR BASED) ===== */
               if (isset($combo['Color'])) {
                 $color = $combo['Color']['value'];
                 if (!empty($mediaGalleryMap[$color])) {
@@ -225,7 +220,7 @@ class ProductSeeder extends Seeder
                 }
               }
 
-              /* ===== INVENTORY (UNCHANGED) ===== */
+              /* ===== INVENTORY ===== */
               Inventory::create([
                 'product_id' => $product->id,
                 'product_variant_id' => $variant->id,

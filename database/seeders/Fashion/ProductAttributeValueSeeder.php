@@ -40,7 +40,7 @@ class ProductAttributeValueSeeder extends Seeder
         'Crossbody',
       ],
 
-      'Frame Colour' => [
+      'Frame Color' => [
         'Red',
         'Blue',
         'Green',
@@ -69,7 +69,7 @@ class ProductAttributeValueSeeder extends Seeder
         'Metal',
       ],
 
-      'Dial Colour' => [
+      'Dial Color' => [
         'Red',
         'Blue',
         'Green',
@@ -145,7 +145,7 @@ class ProductAttributeValueSeeder extends Seeder
       // -------------------------------
       // FRAME COLOUR (SUNGLASSES)
       // -------------------------------
-      'Frame Colour' => match ($val) {
+      'Frame Color' => match ($val) {
         'Red'   => '#FF0000',
         'Blue'  => '#0000FF',
         'Green' => '#008000',
@@ -194,7 +194,7 @@ class ProductAttributeValueSeeder extends Seeder
       // -------------------------------
       // DIAL COLOUR
       // -------------------------------
-      'Dial Colour' => match ($val) {
+      'Dial Color' => match ($val) {
         'Red'   => '#FF0000',
         'Blue'  => '#0000FF',
         'Green' => '#008000',
