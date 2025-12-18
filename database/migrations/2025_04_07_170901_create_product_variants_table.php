@@ -20,6 +20,7 @@ return new class extends Migration
       $table->date('sale_start_date')->nullable();
       $table->date('sale_end_date')->nullable();
       $table->string('sku', 255)->unique();
+      $table->json('attribute_details')->nullable();
       $table->tinyInteger('status')->default(1)->comment('0 for Inactive; 1 for Active');
       $table->foreignId('created_by')->nullable()->constrained('admins')->cascadeOnUpdate()->restrictOnDelete();
       $table->foreignId('updated_by')->nullable()->constrained('admins')->cascadeOnUpdate()->restrictOnDelete();

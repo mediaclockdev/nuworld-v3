@@ -16,6 +16,7 @@ class ProductVariant extends Model
     'sku',
     'sale_start_date',
     'sale_end_date',
+    'attribute_details',
     'created_by',
     'status',
     'updated_by',

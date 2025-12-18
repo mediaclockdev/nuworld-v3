@@ -21,7 +21,6 @@ class ProductAttributeValueSeeder extends Seeder
       ],
 
       'Size' => [
-        'XS',
         'S',
         'M',
         'L',
@@ -29,12 +28,12 @@ class ProductAttributeValueSeeder extends Seeder
         'XXL',
       ],
 
-      'Material' => [
-        'Cotton',
-        'Polyester',
-        'Leather',
+      // 'Material' => [
+      //   'Cotton',
+      //   'Polyester',
+      //   'Leather',
 
-      ],
+      // ],
 
       'Bag Type' => [
         'Tote',
@@ -50,7 +49,6 @@ class ProductAttributeValueSeeder extends Seeder
 
       'Lens Type' => [
         'Polarized',
-        'Tinted',
         'Clear',
       ],
 
@@ -64,13 +62,11 @@ class ProductAttributeValueSeeder extends Seeder
       'Watch Type' => [
         'Analog',
         'Digital',
-        'Chronograph',
       ],
 
       'Band Material' => [
         'Leather',
         'Metal',
-        'Rubber',
       ],
 
       'Dial Colour' => [
@@ -119,7 +115,6 @@ class ProductAttributeValueSeeder extends Seeder
       // SIZE (LABEL DESCRIPTIONS)
       // -------------------------------
       'Size' => match ($val) {
-        'XS' => 'Extra Small Size',
         'S'  => 'Small Size',
         'M'  => 'Medium Size',
         'L'  => 'Large Size',
@@ -131,12 +126,12 @@ class ProductAttributeValueSeeder extends Seeder
       // -------------------------------
       // MATERIAL (FABRIC DESCRIPTIONS)
       // -------------------------------
-      'Material' => match ($val) {
-        'Cotton'    => 'Soft breathable natural fabric',
-        'Polyester' => 'Durable synthetic fabric',
-        'Leather'   => 'Premium genuine leather',
-        default => null,
-      },
+      // 'Material' => match ($val) {
+      //   'Cotton'    => 'Soft breathable natural fabric',
+      //   'Polyester' => 'Durable synthetic fabric',
+      //   'Leather'   => 'Premium genuine leather',
+      //   default => null,
+      // },
 
       // -------------------------------
       // BAG TYPE
@@ -163,7 +158,6 @@ class ProductAttributeValueSeeder extends Seeder
       // -------------------------------
       'Lens Type' => match ($val) {
         'Polarized' => 'Reduces glare and reflections',
-        'Tinted'    => 'Light tinted lenses for style',
         'Clear'     => 'Transparent lenses',
         default     => null,
       },
@@ -185,7 +179,6 @@ class ProductAttributeValueSeeder extends Seeder
       'Watch Type' => match ($val) {
         'Analog'      => 'Classic hour & minute hands',
         'Digital'     => 'LED/LCD numeric display',
-        'Chronograph' => 'Stopwatch function included',
         default       => null,
       },
 
@@ -195,7 +188,6 @@ class ProductAttributeValueSeeder extends Seeder
       'Band Material' => match ($val) {
         'Leather' => 'Premium comfort leather strap',
         'Metal'   => 'Stainless steel band',
-        'Rubber'  => 'Water-resistant rubber strap',
         default   => null,
       },
 
