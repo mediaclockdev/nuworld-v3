@@ -22,6 +22,10 @@ class ProductVariant extends Model
     'updated_by',
   ];
 
+  protected $casts = [
+    'attribute_details' => 'array',
+  ];
+
   public function category()
   {
     return $this->hasOneThrough(ProductCategory::class, Product::class, 'id', 'id', 'product_id', 'category_id');
