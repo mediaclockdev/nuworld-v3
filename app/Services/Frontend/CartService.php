@@ -225,7 +225,7 @@ class CartService
       return response()->json([
         'success' => false,
         'data' => [],
-        'message' => "{$variantName} is already in your cart.",
+        'message' => "Item is already in your cart.",
       ]);
     }
 
@@ -239,7 +239,7 @@ class CartService
     return response()->json([
       'success' => true,
       'data' => [],
-      'message' => "{$variantName} added to cart.",
+      'message' => "Item added to cart.",
     ]);
   }
 

@@ -10,10 +10,13 @@ use App\Http\Resources\Api\Frontend\CategoryCheckoutCollectionBannerResource;
 use App\Http\Resources\Api\Frontend\CategoryHotDealsBannerResource;
 use App\Http\Resources\Api\Frontend\CategoryResource;
 use App\Http\Resources\Api\Frontend\ProductResource;
+use App\Models\ProductVariant;
 use App\Services\Frontend\BannerService;
 use App\Services\Frontend\CategoryService;
 use App\Services\Frontend\ProductService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class CategoryController extends Controller
 {
@@ -48,26 +51,95 @@ class CategoryController extends Controller
   //   ], __('response.success.fetch', ['item' => 'Category']));
   // }
 
-  public function getCategoryBySlug($slug = null)
+  // public function getCategoryBySlug($slug = null)
+  // {
+  //   ifApiTokenExists();
+
+  //   $category = $this->categoryService->getCategory($slug);
+
+  //   if (!$category)
+  //     return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
+
+  //   if ($category->products->isEmpty()) {
+  //     $productVariants = collect([]);
+  //   } else {
+  //     $productVariants = $category->products->map(function ($product) {
+  //       return $product->variants()->first(); // Fetch first variant of each product
+  //     })->filter();
+  //   }
+
+  //   return ApiResponse::success([
+  //     'category' => CategoryResource::make($category),
+  //     'product_variants' => ProductResource::collection($productVariants),
+  //   ], __('response.success.fetch', ['item' => 'Category']));
+  // }
+
+  public function getCategoryBySlug(Request $request, $slug = null)
   {
     ifApiTokenExists();
 
+    $sort = $request->query('sort', 'relevance');
+
     $category = $this->categoryService->getCategory($slug);
 
-    if (!$category)
+    if (!$category) {
       return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
-
-    if ($category->products->isEmpty()) {
-      $productVariants = collect([]);
-    } else {
-      $productVariants = $category->products->map(function ($product) {
-        return $product->variants()->first(); // Fetch first variant of each product
-      })->filter();
     }
+
+    // Base variant query (only active variants of this category)
+    $variantQuery = ProductVariant::query()
+      ->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+      ->where('status', 1)
+      ->whereHas('product', function ($q) use ($category) {
+        $q->where('category_id', $category->id);
+      });
+
+    /**
+     * ---------------- SORTING ----------------
+     */
+    if ($sort === 'name-asc') {
+
+      $variantQuery->orderBy('name', 'asc');
+    } elseif ($sort === 'lowest-price') {
+
+      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
+    } elseif ($sort === 'highest-price') {
+
+      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
+    } elseif ($sort === 'top-rated') {
+
+      // Join ratings aggregation
+      $variantQuery->leftJoinSub(
+        DB::table('product_reviews')
+          ->select(
+            'variant_id',
+            DB::raw('AVG(rating) as avg_rating'),
+            DB::raw('COUNT(*) as review_count')
+          )
+          ->groupBy('variant_id'),
+        'rv',
+        'rv.variant_id',
+        'product_variants.id'
+      )
+        ->select(
+          'product_variants.*',
+          DB::raw('COALESCE(rv.avg_rating, 0) as avg_rating'),
+          DB::raw('COALESCE(rv.review_count, 0) as review_count')
+        )
+        ->orderByDesc('avg_rating')
+        ->orderByDesc('review_count')
+        ->orderByDesc('product_variants.created_at');
+    } else {
+      // relevance / most-recent (default)
+      $variantQuery->orderByDesc('product_variants.created_at');
+    }
+
+    $productVariants = $variantQuery->get();
 
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
       'product_variants' => ProductResource::collection($productVariants),
+      'applied_sort' => $sort
     ], __('response.success.fetch', ['item' => 'Category']));
   }
 }
