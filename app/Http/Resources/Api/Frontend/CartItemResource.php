@@ -17,14 +17,17 @@ class CartItemResource extends JsonResource
 
   public function toArray(Request $request): array
   {
+    $attributes = $this->productVariant->attribute_details ?? [];
     return [
       'id' => Hashids::encode($this->id),
       'product_variant_id' => Hashids::encode($this->product_variant_id),
       'quantity' => $this->quantity ?? 0,
       'is_saved_for_later' => $this->is_saved_for_later,
       'category' => $this->productVariant->category?->title ?? '',
+      'product_name' => $this->productVariant->product->name ?? '',
       'name' => $this->productVariant->name ?? '',
       'sku' => $this->productVariant->sku ?? '',
+      'attributes' => $attributes,
       'price'           => displayPrice(findSalePrice($this->productVariant->id)['display_price']),
       'old_price'       => findSalePrice($this->productVariant->id)['regular_price_true'] ? null : displayPrice(findSalePrice($this->productVariant->id)['regular_price']),
       'is_discount'     => findSalePrice($this->productVariant->id)['regular_price_true'] ? false : true,
@@ -33,6 +36,7 @@ class CartItemResource extends JsonResource
       'image'           => !empty($this->productVariant->galleries[0]['file_name'])
         ? asset('public/storage/uploads/media/products/images/' . $this->productVariant->galleries[0]['file_name'])
         : asset('public/backend/assetss/images/products/product_thumb.jpg'),
+
 
     ];
   }
