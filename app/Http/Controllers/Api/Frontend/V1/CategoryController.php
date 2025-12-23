@@ -86,16 +86,30 @@ class CategoryController extends Controller
       return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
     }
 
-    // Base variant query (only active variants of this category)
-    $variantQuery = ProductVariant::query()
-      ->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+    /**
+     * -------------------------------------------------
+     * STEP 1: Subquery → first variant per product
+     * -------------------------------------------------
+     */
+    $defaultVariantSubQuery = ProductVariant::query()
+      ->select(DB::raw('MIN(id)'))
       ->where('status', 1)
-      ->whereHas('product', function ($q) use ($category) {
-        $q->where('category_id', $category->id);
-      });
+      ->whereHas('product', fn($q) => $q->where('category_id', $category->id))
+      ->groupBy('product_id');
 
     /**
-     * ---------------- SORTING ----------------
+     * -------------------------------------------------
+     * STEP 2: Main query → only those variants
+     * -------------------------------------------------
+     */
+    $variantQuery = ProductVariant::query()
+      ->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
+      ->whereIn('id', $defaultVariantSubQuery);
+
+    /**
+     * -------------------------------------------------
+     * STEP 3: Sorting
+     * -------------------------------------------------
      */
     if ($sort === 'name-asc') {
 
@@ -108,7 +122,6 @@ class CategoryController extends Controller
       $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
     } elseif ($sort === 'top-rated') {
 
-      // Join ratings aggregation
       $variantQuery->leftJoinSub(
         DB::table('product_reviews')
           ->select(
@@ -130,7 +143,7 @@ class CategoryController extends Controller
         ->orderByDesc('review_count')
         ->orderByDesc('product_variants.created_at');
     } else {
-      // relevance / most-recent (default)
+      // relevance / most-recent
       $variantQuery->orderByDesc('product_variants.created_at');
     }
 
