@@ -25,6 +25,19 @@ if (!function_exists('cartCount')) {
     }, 0);
   }
 }
+if (!function_exists('cartQuantity')) {
+  function cartQuantity($variantId)
+  {
+    if (!auth()->check()) {
+      return 0;
+    }
+
+    return Cart::where('user_id', auth()->id())
+      ->where('is_saved_for_later', false)
+      ->where('product_variant_id', $variantId)
+      ->sum('quantity'); // or ->value('quantity')
+  }
+}
 
 if (!function_exists('isInCart')) {
   function isInCart(int $productVariantId, bool $includeSavedForLater = false): bool

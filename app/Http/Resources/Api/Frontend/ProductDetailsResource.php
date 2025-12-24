@@ -19,6 +19,7 @@ class ProductDetailsResource extends JsonResource
     $isDiscounted = !$salePrice['regular_price_true'];
     $averageRating = $this->variantReviews()->avg('rating');
     $attributes = $this->attribute_details ?? [];
+    $cartQty = cartQuantity($this->id);
     // Safely collect all review images
     $reviewImages = collect($this->variantReviews)
       ->flatMap(function ($review) {
@@ -43,6 +44,7 @@ class ProductDetailsResource extends JsonResource
       'image' => !empty($this->galleries[0]['file_name'])
         ? asset("public/storage/uploads/media/products/images/{$this->galleries[0]['file_name']}")
         : asset('public/backend/assetss/images/products/product_thumb.jpg'),
+      'cart_quantity' => $cartQty,
       'is_in_cart' => isInCart($this->id, false),
       'is_in_wishlist' => isInCart($this->id, true),
       'product_details' => $this->product->product_details ?? null,
