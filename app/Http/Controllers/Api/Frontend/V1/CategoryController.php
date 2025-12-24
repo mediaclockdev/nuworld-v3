@@ -152,6 +152,7 @@ class CategoryController extends Controller
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
       'product_variants' => ProductResource::collection($productVariants),
+      'categoryBanner' => $this->bannerService->getBanner('category_page_banner', true),
       'applied_sort' => $sort
     ], __('response.success.fetch', ['item' => 'Category']));
   }
