@@ -27,6 +27,8 @@ class BannerResource extends JsonResource
     return [
       'id'          => Hashids::encode($this->id),
       'banner_type' => $this->position,
+      'title' => $this->title ?? '',
+      'sub_title' => $this->sub_title ?? '',
       'settings'    => $settings,
     ];
   }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Frontend\V1;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\Api\Frontend\BannerResource;
 use App\Http\Resources\Api\Frontend\BestSellingProductResource;
 use App\Http\Resources\Api\Frontend\BrandBannerResource;
 use App\Http\Resources\Api\Frontend\CategoryCheckoutCollectionBannerResource;
@@ -148,11 +149,12 @@ class CategoryController extends Controller
     }
 
     $productVariants = $variantQuery->get();
+    $banner = $this->bannerService->getBanner('category_page_banner', true);
 
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
       'product_variants' => ProductResource::collection($productVariants),
-      'categoryBanner' => $this->bannerService->getBanner('category_page_banner', true),
+      'categoryBanner' => BannerResource::collection($banner),
       'applied_sort' => $sort
     ], __('response.success.fetch', ['item' => 'Category']));
   }
