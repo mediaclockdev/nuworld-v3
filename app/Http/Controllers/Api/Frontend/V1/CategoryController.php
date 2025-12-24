@@ -155,7 +155,7 @@ class CategoryController extends Controller
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
       'product_variants' => ProductResource::collection($productVariants),
-      'categoryBanner' => BannerResource::collection($banner),
+      'categoryBanner' => BannerResource::make($banner),
       'applied_sort' => $sort
     ], __('response.success.fetch', ['item' => 'Category']));
   }
