@@ -150,7 +150,7 @@ class CategoryController extends Controller
 
     $productVariants = $variantQuery->get();
     $banner = $this->bannerService->getBanner('category_page_banner', true);
-    // pd($banner);
+    pd($banner);
 
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
