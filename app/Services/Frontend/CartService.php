@@ -450,6 +450,7 @@ class CartService
 
     $cartItem = Cart::where('user_id', $userId)
       ->where('product_variant_id', $variantId)
+      ->where('is_saved_for_later', false)
       ->first();
 
     if (!$cartItem) {
