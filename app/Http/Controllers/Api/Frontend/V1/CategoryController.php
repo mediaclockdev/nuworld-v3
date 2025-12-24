@@ -11,6 +11,7 @@ use App\Http\Resources\Api\Frontend\CategoryCheckoutCollectionBannerResource;
 use App\Http\Resources\Api\Frontend\CategoryHotDealsBannerResource;
 use App\Http\Resources\Api\Frontend\CategoryResource;
 use App\Http\Resources\Api\Frontend\ProductResource;
+use App\Models\CustomBanner;
 use App\Models\ProductVariant;
 use App\Services\Frontend\BannerService;
 use App\Services\Frontend\CategoryService;
@@ -149,8 +150,9 @@ class CategoryController extends Controller
     }
 
     $productVariants = $variantQuery->get();
-    $banner = $this->bannerService->getBanner('category_page_banner', true);
-    pd($banner);
+    $banner = CustomBanner::where('banner_type', 'category_page_banner')
+      ->first();
+    // pd($banner);
 
     return ApiResponse::success([
       'category' => CategoryResource::make($category),
