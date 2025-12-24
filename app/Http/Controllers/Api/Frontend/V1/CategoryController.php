@@ -150,7 +150,7 @@ class CategoryController extends Controller
     }
 
     $productVariants = $variantQuery->get();
-    $banner = CustomBanner::where('banner_type', 'category_page_banner')
+    $banner = CustomBanner::where('position', 'category_page_banner')
       ->first();
     // pd($banner);
 
