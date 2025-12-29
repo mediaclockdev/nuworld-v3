@@ -90,26 +90,39 @@ class CategoryController extends Controller
 
     /**
      * -------------------------------------------------
-     * STEP 1: Subquery → first & last variant per product
+     * STEP 1: Rank products in category (1st, 2nd)
      * -------------------------------------------------
      */
-    $variantIdsSubQuery = ProductVariant::query()
-      ->select(DB::raw('MIN(id) as id'))
-      ->where('status', 1)
-      ->whereHas('product', fn($q) => $q->where('category_id', $category->id))
-      ->groupBy('product_id')
-
-      ->unionAll(
-        ProductVariant::query()
-          ->select(DB::raw('MAX(id) as id'))
-          ->where('status', 1)
-          ->whereHas('product', fn($q) => $q->where('category_id', $category->id))
-          ->groupBy('product_id')
-      );
+    $productRankSubQuery = DB::table('products')
+      ->select(
+        'id as product_id',
+        DB::raw('ROW_NUMBER() OVER (ORDER BY id) as product_rank')
+      )
+      ->where('category_id', $category->id);
 
     /**
      * -------------------------------------------------
-     * STEP 2: Main query → only those variants
+     * STEP 2: Pick variant based on product rank
+     *   - product_rank = 1 → FIRST variant (MIN id)
+     *   - product_rank = 2 → LAST variant (MAX id)
+     * -------------------------------------------------
+     */
+    $variantIdSubQuery = DB::table('product_variants as pv')
+      ->joinSub($productRankSubQuery, 'pr', function ($join) {
+        $join->on('pr.product_id', '=', 'pv.product_id');
+      })
+      ->where('pv.status', 1)
+      ->groupBy('pv.product_id', 'pr.product_rank')
+      ->selectRaw("
+            CASE
+                WHEN pr.product_rank = 1 THEN MIN(pv.id)
+                WHEN pr.product_rank = 2 THEN MAX(pv.id)
+            END as id
+        ");
+
+    /**
+     * -------------------------------------------------
+     * STEP 3: Main query
      * -------------------------------------------------
      */
     $variantQuery = ProductVariant::query()
@@ -120,11 +133,11 @@ class CategoryController extends Controller
         'inventory',
         'variantReviews'
       ])
-      ->whereIn('id', $variantIdsSubQuery);
+      ->whereIn('id', $variantIdSubQuery);
 
     /**
      * -------------------------------------------------
-     * STEP 3: Sorting
+     * STEP 4: Sorting
      * -------------------------------------------------
      */
     if ($sort === 'name-asc') {
@@ -166,7 +179,7 @@ class CategoryController extends Controller
 
     /**
      * -------------------------------------------------
-     * STEP 4: Execute
+     * STEP 5: Execute
      * -------------------------------------------------
      */
     $productVariants = $variantQuery->get();
