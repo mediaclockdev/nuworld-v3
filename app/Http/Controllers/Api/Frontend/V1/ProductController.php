@@ -290,6 +290,10 @@ class ProductController extends Controller
     // Checkout more products
     $checkoutProducts = ProductVariant::where('status', 1)
       ->where('product_id', '!=', $productVariant->product_id)
+      ->whereHas('product', function ($query) use ($productVariant) {
+        $query->where('category_id', $productVariant->product->category_id);
+      })
+      ->inRandomOrder()
       ->take(3)
       ->get();
 
