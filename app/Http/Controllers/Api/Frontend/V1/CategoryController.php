@@ -90,52 +90,80 @@ class CategoryController extends Controller
 
     /**
      * -------------------------------------------------
-     * STEP 1: Subquery → first variant per product
+     * STEP 1: Rank products inside the category
      * -------------------------------------------------
      */
-    $defaultVariantSubQuery = ProductVariant::query()
-      ->select(DB::raw('MIN(id)'))
-      ->where('status', 1)
-      ->whereHas('product', fn($q) => $q->where('category_id', $category->id))
-      ->groupBy('product_id');
+    $productRankSubQuery = DB::table('products')
+      ->select(
+        'id as product_id',
+        DB::raw('ROW_NUMBER() OVER (ORDER BY id) as product_rank')
+      )
+      ->where('category_id', $category->id);
 
     /**
      * -------------------------------------------------
-     * STEP 2: Main query → only those variants
+     * STEP 2: Rank variants per product
+     * -------------------------------------------------
+     */
+    $variantRankSubQuery = DB::table('product_variants')
+      ->select(
+        'id',
+        'product_id',
+        DB::raw('ROW_NUMBER() OVER (PARTITION BY product_id ORDER BY id) as variant_rank')
+      )
+      ->where('status', 1);
+
+    /**
+     * -------------------------------------------------
+     * STEP 3: Match product_rank = variant_rank
      * -------------------------------------------------
      */
     $variantQuery = ProductVariant::query()
-      ->with(['product', 'product.category', 'galleries', 'inventory', 'variantReviews'])
-      ->whereIn('id', $defaultVariantSubQuery);
+      ->joinSub($productRankSubQuery, 'pr', function ($join) {
+        $join->on('pr.product_id', '=', 'product_variants.product_id');
+      })
+      ->joinSub($variantRankSubQuery, 'vr', function ($join) {
+        $join->on('vr.id', '=', 'product_variants.id')
+          ->on('vr.variant_rank', '=', 'pr.product_rank');
+      })
+      ->with([
+        'product',
+        'product.category',
+        'galleries',
+        'inventory',
+        'variantReviews'
+      ]);
 
     /**
      * -------------------------------------------------
-     * STEP 3: Sorting
+     * STEP 4: Sorting
      * -------------------------------------------------
      */
     if ($sort === 'name-asc') {
 
-      $variantQuery->orderBy('name', 'asc');
+      $variantQuery->orderBy('product_variants.name', 'asc');
     } elseif ($sort === 'lowest-price') {
 
-      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
+      $variantQuery->orderByRaw('COALESCE(product_variants.sale_price, product_variants.regular_price) asc');
     } elseif ($sort === 'highest-price') {
 
-      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
+      $variantQuery->orderByRaw('COALESCE(product_variants.sale_price, product_variants.regular_price) desc');
     } elseif ($sort === 'top-rated') {
 
-      $variantQuery->leftJoinSub(
-        DB::table('product_reviews')
-          ->select(
-            'variant_id',
-            DB::raw('AVG(rating) as avg_rating'),
-            DB::raw('COUNT(*) as review_count')
-          )
-          ->groupBy('variant_id'),
-        'rv',
-        'rv.variant_id',
-        'product_variants.id'
-      )
+      $variantQuery
+        ->leftJoinSub(
+          DB::table('product_reviews')
+            ->select(
+              'variant_id',
+              DB::raw('AVG(rating) as avg_rating'),
+              DB::raw('COUNT(*) as review_count')
+            )
+            ->groupBy('variant_id'),
+          'rv',
+          'rv.variant_id',
+          '=',
+          'product_variants.id'
+        )
         ->select(
           'product_variants.*',
           DB::raw('COALESCE(rv.avg_rating, 0) as avg_rating'),
@@ -149,16 +177,20 @@ class CategoryController extends Controller
       $variantQuery->orderByDesc('product_variants.created_at');
     }
 
+    /**
+     * -------------------------------------------------
+     * STEP 5: Execute query
+     * -------------------------------------------------
+     */
     $productVariants = $variantQuery->get();
-    $banner = CustomBanner::where('position', 'category_page_banner')
-      ->first();
-    // pd($banner);
+
+    $banner = CustomBanner::where('position', 'category_page_banner')->first();
 
     return ApiResponse::success([
-      'category' => CategoryResource::make($category),
+      'category'         => CategoryResource::make($category),
       'product_variants' => ProductResource::collection($productVariants),
-      'categoryBanner' => BannerResource::make($banner),
-      'applied_sort' => $sort
+      'categoryBanner'   => BannerResource::make($banner),
+      'applied_sort'     => $sort
     ], __('response.success.fetch', ['item' => 'Category']));
   }
 }
