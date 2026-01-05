@@ -181,20 +181,13 @@ class CartController extends Controller
         ],
         'coupon' => $couponInfo,
         'delivery_charges_breakup' => $deliveryChargesList,
-        'billing_address' => $address['billing_address']
-          ? AddressResource::collection(
-            $address['billing_address'] instanceof \Illuminate\Support\Collection
-              ? $address['billing_address']
-              : collect([$address['billing_address']])
-          )->toArray(request())
-          : [],
-        'shipping_address' => $address['shipping_address']
-          ? AddressResource::collection(
-            $address['shipping_address'] instanceof \Illuminate\Support\Collection
-              ? $address['shipping_address']
-              : collect([$address['shipping_address']])
-          )->toArray(request())
-          : [],
+        'billing_address' => !empty($address['billing_address'])
+          ? (new AddressResource($address['billing_address']))->toArray(request())
+          : null,
+
+        'shipping_address' => !empty($address['shipping_address'])
+          ? (new AddressResource($address['shipping_address']))->toArray(request())
+          : null,
       ],
       'pagination' => $this->formatPagination($cartItems, $cartPage, $perPage)
     ], 200);
