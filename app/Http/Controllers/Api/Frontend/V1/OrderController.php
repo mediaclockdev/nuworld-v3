@@ -19,6 +19,7 @@ use App\Services\Frontend\CheckoutService;
 use App\Services\Frontend\OrderService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\{JsonResponse, Request};
+use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
 
 class OrderController extends Controller
@@ -134,5 +135,69 @@ class OrderController extends Controller
     //dd($request->all());
     // pd($request->order_number);
     return $this->checkoutService->updateOrderPayment($request->order_number, 'COD', null);
+  }
+
+  public function stripeInitApi(Request $request): JsonResponse
+  {
+    $request->validate([
+      'order_number' => 'required|string|exists:orders,order_number'
+    ]);
+
+    $order = Order::where('order_number', $request->order_number)->first();
+
+    if ($order->payment_status == 1) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Order already paid'
+      ], 422);
+    }
+
+    $stripePublicKey = PaymentSettings::where([
+      ['gateway_name', 'stripe'],
+      ['gateway_mode', 'test']
+    ])->value('gateway_key');
+
+    return response()->json([
+      'success' => true,
+      'data' => [
+        'order_number' => $order->order_number,
+        'amount' => $order->net_total,
+        'currency' => explode('~', displayPrice(1, true))[1],
+        'stripe_public_key' => $stripePublicKey
+      ]
+    ]);
+  }
+
+  public function stripeConfirmApi(Request $request): JsonResponse
+  {
+    $request->validate([
+      'order_number' => 'required|string',
+      'payment_intent' => 'required|array'
+    ]);
+
+    $order = Order::where('order_number', $request->order_number)->firstOrFail();
+
+    if ($order->payment_status == 1) {
+      return response()->json([
+        'success' => false,
+        'message' => 'Order already paid'
+      ], 422);
+    }
+
+    DB::transaction(function () use ($order, $request) {
+      $this->checkoutService->updateOrderPayment(
+        $order->order_number,
+        'Stripe',
+        (object) $request->payment_intent
+      );
+    });
+
+    return response()->json([
+      'success' => true,
+      'message' => 'Payment successful',
+      'data' => [
+        'order_number' => $order->order_number
+      ]
+    ]);
   }
 }

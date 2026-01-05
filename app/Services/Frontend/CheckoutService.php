@@ -446,6 +446,7 @@ class CheckoutService
       'data' => [
         'order_number' => $order->order_number,
         'order_type'   => $paymentMethod === 1 ? 'payment' : 'confirm',
+        'next_step'   => $paymentMethod === 1 ? 'stripe_payment' : 'confirm',
       ],
       'message'      => __('response.success.create', ['item' => 'Order'])
     ]);

@@ -86,6 +86,8 @@ Route::prefix('v1')->group(function () {
       Route::get('/coupon/remove', 'couponRemove')->name('order.coupon.remove');
       Route::post('/checkout/process', 'process')->name('checkout.process');
       Route::post('/checkout/confirm', 'updateCODOrder')->name('checkout.confirm');
+      Route::post('/checkout/stripe/init', 'stripeInitApi')->name('checkout.stripe');
+      Route::post('/checkout/stripe/confirm', 'stripeConfirmApi')->name('checkout.stripeconfirm');
     });
     // Orders Routes
     // My Cart/Wishlist Routes
