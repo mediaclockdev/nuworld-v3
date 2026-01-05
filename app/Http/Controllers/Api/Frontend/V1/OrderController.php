@@ -21,6 +21,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
 
 class OrderController extends Controller
 {
@@ -143,38 +145,6 @@ class OrderController extends Controller
       'order_number' => 'required|string|exists:orders,order_number'
     ]);
 
-    $order = Order::where('order_number', $request->order_number)->first();
-
-    if ($order->payment_status == 1) {
-      return response()->json([
-        'success' => false,
-        'message' => 'Order already paid'
-      ], 422);
-    }
-
-    $stripePublicKey = PaymentSettings::where([
-      ['gateway_name', 'stripe'],
-      ['gateway_mode', 'test']
-    ])->value('gateway_key');
-
-    return response()->json([
-      'success' => true,
-      'data' => [
-        'order_number' => $order->order_number,
-        'amount' => $order->net_total,
-        'currency' => explode('~', displayPrice(1, true))[1],
-        'stripe_public_key' => $stripePublicKey
-      ]
-    ]);
-  }
-
-  public function stripeConfirmApi(Request $request): JsonResponse
-  {
-    $request->validate([
-      'order_number' => 'required|string',
-      'payment_intent' => 'required|array'
-    ]);
-
     $order = Order::where('order_number', $request->order_number)->firstOrFail();
 
     if ($order->payment_status == 1) {
@@ -184,11 +154,74 @@ class OrderController extends Controller
       ], 422);
     }
 
-    DB::transaction(function () use ($order, $request) {
+    // 🔐 Set Stripe Secret Key
+    Stripe::setApiKey(
+      PaymentSettings::where([
+        ['gateway_name', 'stripe'],
+        ['gateway_mode', 'test']
+      ])->value('gateway_secret')
+    );
+
+    $currency = strtolower(explode('~', displayPrice(1, true))[1]);
+
+    // ✅ CREATE PAYMENT INTENT
+    $paymentIntent = PaymentIntent::create([
+      'amount' => (int) ($order->net_total * 100),
+      'currency' => $currency,
+      'metadata' => [
+        'order_number' => $order->order_number
+      ],
+    ]);
+
+    return response()->json([
+      'success' => true,
+      'data' => [
+        'payment_intent_client_secret' => $paymentIntent->client_secret,
+        'payment_intent_id' => $paymentIntent->id,
+        'amount' => $order->net_total,
+        'currency' => strtoupper($currency),
+      ]
+    ]);
+  }
+
+  public function stripeConfirmApi(Request $request): JsonResponse
+  {
+    $request->validate([
+      'order_number' => 'required|string|exists:orders,order_number',
+      'payment_intent_id' => 'required|string'
+    ]);
+
+    $order = Order::where('order_number', $request->order_number)->firstOrFail();
+
+    if ($order->payment_status == 1) {
+      return response()->json([
+        'success' => true,
+        'message' => 'Order already paid'
+      ]);
+    }
+
+    Stripe::setApiKey(
+      PaymentSettings::where([
+        ['gateway_name', 'stripe'],
+        ['gateway_mode', 'test']
+      ])->value('gateway_secret')
+    );
+
+    // 🔍 VERIFY PAYMENT INTENT FROM STRIPE
+    $intent = PaymentIntent::retrieve($request->payment_intent_id);
+
+    if ($intent->status !== 'succeeded') {
+      return response()->json([
+        'success' => false,
+        'message' => 'Payment not completed'
+      ], 422);
+    }
+
+    DB::transaction(function () use ($order, $intent) {
       $this->checkoutService->updateOrderPayment(
         $order->order_number,
         'Stripe',
-        (object) $request->payment_intent
+        $intent
       );
     });
 
