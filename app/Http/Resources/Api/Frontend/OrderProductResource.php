@@ -22,6 +22,7 @@ class OrderProductResource extends JsonResource
       'order_id' => Hashids::encode($this->order_id),
       'variant_id' => Hashids::encode($this->variant_id),
       'name' => $this->variant->name ?? '',
+      'product_name' => $this->variant->product->name ?? '',
       'sku' => $this->variant->sku ?? '',
       'image' => !empty($this->variant->galleries[0]['file_name'])
         ? asset('public/storage/uploads/media/products/images/' . $this->variant->galleries[0]['file_name'])
