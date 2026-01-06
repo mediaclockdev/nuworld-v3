@@ -15,13 +15,22 @@ class UserProfile
   // fetching user profile
   public static function getProfileInfo()
   {
-    $data = [];
-    $userData = Auth::user();
-    $userImage = userImageById('api', $userData->id);
-    $data['user_data'] = $userData;
-    $data['user_image'] = $userImage['image'] ?? null;
-    return $data;
+    $user = Auth::user();
+
+    $guard = Auth::getDefaultDriver();
+    $guard = $guard === 'api' ? 'web' : $guard;
+
+    $image = userImageById($guard, $user->id);
+
+    return [
+      'id' => $user->id,
+      'first_name' => $user->first_name,
+      'last_name' => $user->last_name,
+      'email' => $user->email,
+      'default_profile_image' => $image['image'] ?? null,
+    ];
   }
+
 
   public static function updateProfile(array $attributes): bool
   {
@@ -32,5 +41,4 @@ class UserProfile
       return false;
     return $user->save();
   }
-
 }

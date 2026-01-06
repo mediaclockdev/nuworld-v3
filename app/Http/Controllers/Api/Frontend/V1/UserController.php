@@ -67,6 +67,8 @@ class UserController extends Controller
     try {
       $user  = Auth::user();
       $guard = Auth::getDefaultDriver(); // web | admin
+      $guard = $guard === 'api' ? 'web' : $guard;
+
 
       // Delete old image if exists
       if (!empty($user->image)) {
