@@ -28,13 +28,18 @@ class OrderController extends Controller
 {
   public function __construct(private OrderService $orderService, private CheckoutService $checkoutService) {}
   // fetch Orders
-  public function myOrders()
+  public function myOrders(Request $request)
   {
-    $orders = $this->orderService->getAllOrderData();
-    $orderList = collect($orders['orders']);
-    //pd($orderList->orderProducts);
-    return ApiResponse::success(OrderResource::collection($orderList), __('response.success.fetch', ['item' => 'My Orders']));
+    $filter = $request->query('filter', 'all');
+
+    $orders = $this->orderService->getAllOrderData($filter);
+
+    return ApiResponse::success(
+      OrderResource::collection($orders),
+      __('response.success.fetch', ['item' => 'My Orders'])
+    );
   }
+
 
   public function orderDetails($order_number = null)
   {

@@ -2,6 +2,7 @@
 
 namespace App\Services\Frontend;
 
+use App\Enums\OrderStatus;
 use App\Models\CustomerReward;
 use App\Models\Order;
 use App\Models\OrderReturn;
@@ -59,20 +60,27 @@ class OrderService
     ];
   }
 
-  public function getAllOrderData(): array
+  public function getAllOrderData(string $filter = 'all')
   {
     $user = Auth::user();
 
-    $orders = Order::with(['orderProducts.variant', 'orderProducts.variant.product', 'orderHistories'])
+    $query = Order::with([
+      'orderProducts.variant',
+      'orderProducts.variant.product',
+      'orderHistories'
+    ])
       ->where('user_id', $user->id)
-      ->where('order_status', '!=', 0)
-      ->orderBy('created_at', 'desc')
-      ->get();
-    return [
-      'orders' => $orders,
-      'items' => $orders->flatMap->orderProducts,
-    ];
+      ->where('order_status', '!=', OrderStatus::INACTIVE);
+
+    match ($filter) {
+      'completed' => $query->where('order_status', OrderStatus::DELIVERED),
+      'cancelled' => $query->where('order_status', OrderStatus::CANCELLED),
+      default => null, // all
+    };
+
+    return $query->orderBy('created_at', 'desc')->get();
   }
+
 
   public function getOrderReturnData(string $orderId): JsonResponse
   {
