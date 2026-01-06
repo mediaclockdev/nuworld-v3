@@ -61,7 +61,7 @@ class UserController extends Controller
   public function updateUserImage(Request $request): JsonResponse
   {
     $request->validate([
-      'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+      'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
     ]);
 
     try {
@@ -71,13 +71,13 @@ class UserController extends Controller
       // Delete old image if exists
       if (!empty($user->avatar)) {
         Storage::delete([
-          "public/storage/uploads/{$guard}/profile/{$user->avatar}",
-          "public/storage/uploads/{$guard}/profile/thumbnail/{$user->avatar}",
+          "public/storage/uploads/{$guard}/profile/{$user->image}",
+          "public/storage/uploads/{$guard}/profile/thumbnail/{$user->image}",
         ]);
       }
 
       // Store new image
-      $file = $request->file('avatar');
+      $file = $request->file('image');
       $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
 
       $file->storeAs(
@@ -87,7 +87,7 @@ class UserController extends Controller
 
       // Update ONLY avatar column
       $user->update([
-        'avatar' => $fileName,
+        'image' => $fileName,
       ]);
 
       // Return fresh profile info
