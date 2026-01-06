@@ -69,7 +69,7 @@ class UserController extends Controller
       $guard = Auth::getDefaultDriver(); // web | admin
 
       // Delete old image if exists
-      if (!empty($user->avatar)) {
+      if (!empty($user->image)) {
         Storage::delete([
           "public/storage/uploads/{$guard}/profile/{$user->image}",
           "public/storage/uploads/{$guard}/profile/thumbnail/{$user->image}",
