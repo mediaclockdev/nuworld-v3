@@ -15,10 +15,11 @@ use App\Models\Country;
 use App\Models\State;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Log;
-
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {
@@ -57,6 +58,52 @@ class UserController extends Controller
   }
 
 
+  public function updateUserImage(Request $request): JsonResponse
+  {
+    $request->validate([
+      'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    ]);
+
+    try {
+      $user  = Auth::user();
+      $guard = Auth::getDefaultDriver(); // web | admin
+
+      // Delete old image if exists
+      if (!empty($user->avatar)) {
+        Storage::delete([
+          "public/storage/uploads/{$guard}/profile/{$user->avatar}",
+          "public/storage/uploads/{$guard}/profile/thumbnail/{$user->avatar}",
+        ]);
+      }
+
+      // Store new image
+      $file = $request->file('avatar');
+      $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+
+      $file->storeAs(
+        "public/storage/uploads/{$guard}/profile",
+        $fileName
+      );
+
+      // Update ONLY avatar column
+      $user->update([
+        'avatar' => $fileName,
+      ]);
+
+      // Return fresh profile info
+      $profile = UserProfile::getProfileInfo();
+
+      return ApiResponse::success(
+        new UserProfileResource($profile),
+        __('response.success.update', ['item' => 'Profile Image'])
+      );
+    } catch (\Throwable $e) {
+      return ApiResponse::error(
+        __('response.error.update', ['item' => 'Profile Image']),
+        400
+      );
+    }
+  }
 
 
   public function fetchUserAddress(): JsonResponse

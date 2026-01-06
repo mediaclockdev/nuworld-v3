@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
     Route::controller(UserController::class)->group(function () {
       Route::get('/user-profile', 'fetchUserData')->name('fetch-user-profile');
       Route::post('/user-profile', 'updateUserData')->name('update-user-profile');
+      Route::post('/user-profile-image', 'updateUserImage')->name('update-user-image');
       Route::post('/user-orders', 'updateUserData')->name('update-user-profile');
       Route::get('/user-address', 'fetchUserAddress')->name('fetch-user-address');
       Route::post('/user-address', 'updateUserAddress')->name('update-user-address');
