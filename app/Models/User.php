@@ -36,7 +36,8 @@ class User extends Authenticatable implements JWTSubject
     'updated_by',
     'status',
     'fcm_token',
-    'image'
+    'image',
+    'avatar'
   ];
 
   /**
