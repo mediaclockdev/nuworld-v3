@@ -71,8 +71,8 @@ class UserController extends Controller
       $guard = $guard === 'api' ? 'web' : $guard;
 
       // Delete old image
-      if ($user->image) {
-        Storage::disk('public')->delete("uploads/{$guard}/profile/{$user->image}");
+      if ($user->avatar) {
+        Storage::disk('public')->delete("uploads/{$guard}/profile/{$user->avatar}");
       }
 
       // Store image (FORCE public disk)
@@ -87,12 +87,16 @@ class UserController extends Controller
 
       // Update DB
       $user->update([
-        'image' => $fileName,
+        'avatar' => $fileName,
       ]);
 
+      //$profile = UserProfile::getProfileInfo();
+
+      $profile = UserProfile::getProfileInfo();
+
       return ApiResponse::success(
-        UserProfile::getProfileInfo(),
-        __('response.success.update', ['item' => 'Profile Image'])
+        new UserProfileResource($profile),
+        __('response.success.update', ['item' => 'User Data'])
       );
     } catch (\Throwable $e) {
       return ApiResponse::error($e->getMessage(), 400);
