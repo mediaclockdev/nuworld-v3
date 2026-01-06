@@ -73,7 +73,7 @@ class UserController extends Controller
       // Delete old image if exists
       if (!empty($user->image)) {
         Storage::delete([
-          "public/uploads/{$guard}/profile/{$user->avatar}",
+          "public/uploads/{$guard}/profile/{$user->image}",
           "public/uploads/{$guard}/profile/thumbnail/{$user->image}",
         ]);
       }
