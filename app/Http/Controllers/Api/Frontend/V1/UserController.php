@@ -65,47 +65,40 @@ class UserController extends Controller
     ]);
 
     try {
-      $user  = Auth::user();
-      $guard = Auth::getDefaultDriver(); // web | admin
+      $user = Auth::user();
+
+      $guard = Auth::getDefaultDriver();
       $guard = $guard === 'api' ? 'web' : $guard;
 
-
-      // Delete old image if exists
-      if (!empty($user->image)) {
-        Storage::delete([
-          "public/uploads/{$guard}/profile/{$user->image}",
-          "public/uploads/{$guard}/profile/thumbnail/{$user->image}",
-        ]);
+      // Delete old image
+      if ($user->image) {
+        Storage::disk('public')->delete("uploads/{$guard}/profile/{$user->image}");
       }
 
-      // Store new image
+      // Store image (FORCE public disk)
       $file = $request->file('image');
       $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
 
-      $file->storeAs(
-        "public/uploads/{$guard}/profile",
+      Storage::disk('public')->putFileAs(
+        "uploads/{$guard}/profile",
+        $file,
         $fileName
       );
 
-      // Update ONLY avatar column
+      // Update DB
       $user->update([
         'image' => $fileName,
       ]);
 
-      // Return fresh profile info
-      $profile = UserProfile::getProfileInfo();
-
       return ApiResponse::success(
-        new UserProfileResource($profile),
+        UserProfile::getProfileInfo(),
         __('response.success.update', ['item' => 'Profile Image'])
       );
     } catch (\Throwable $e) {
-      return ApiResponse::error(
-        $e->getMessage(), // 👈 actual error
-        400
-      );
+      return ApiResponse::error($e->getMessage(), 400);
     }
   }
+
 
 
   public function fetchUserAddress(): JsonResponse
