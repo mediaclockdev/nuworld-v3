@@ -101,7 +101,7 @@ class UserController extends Controller
       );
     } catch (\Throwable $e) {
       return ApiResponse::error(
-        __('response.error.update', ['item' => 'Profile Image']),
+        $e->getMessage(), // 👈 actual error
         400
       );
     }
