@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Frontend\AddtoCartRequest;
 use App\Http\Requests\Frontend\ApiProductVariantIDRequest;
 use App\Http\Requests\Frontend\CheckoutRequest;
+use App\Http\Requests\Frontend\MoveOrRemoveWishlistRequest;
 use App\Http\Requests\Frontend\ProductVariantIDRequest;
 use App\Http\Requests\Frontend\UpdateCartQuantityRequest;
 use App\Http\Resources\Api\Frontend\AddressResource;
@@ -246,6 +247,21 @@ class CartController extends Controller
   {
     $data = $request->validated();
     return $this->cartService->addToWishlist($data);
+  }
+
+  public function moveOrRemoveWishlist(MoveOrRemoveWishlistRequest $request): JsonResponse
+  {
+    $data = $request->validated();
+
+    if ($data['action'] === 'remove') {
+      return $this->cartService->removeFromWishlistApi($data['product_variant_id']);
+    }
+
+    return $this->cartService->addToWishlist([
+      'product_variant_id' => $data['product_variant_id'],
+      'quantity' => $data['quantity'],
+      'is_saved_for_later' => true,
+    ]);
   }
 
   public function updateQuantity(UpdateCartQuantityRequest $request): JsonResponse

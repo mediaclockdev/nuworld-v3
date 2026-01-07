@@ -2,6 +2,7 @@
 
 namespace App\Services\Frontend;
 
+use App\Http\Resources\Api\Frontend\CartItemResource;
 use App\Models\{Cart, ProductVariant, Pincode, Inventory};
 use Illuminate\Http\{JsonResponse, RedirectResponse, Request};
 use Illuminate\Support\{Facades\Auth, Str};
@@ -269,10 +270,16 @@ class CartService
       'quantity' => $quantity,
       'is_saved_for_later' => true,
     ]);
+    // ✅ Reload user's cart (or wishlist)
+    $cartItems = Cart::with(['productVariant.product', 'productVariant.category', 'productVariant.inventory', 'productVariant.galleries'])
+      ->where('user_id', $userId)
+      ->where('is_saved_for_later', true)
+      ->get();
+
 
     return response()->json([
       'success' => true,
-      'data' => [],
+      'data' => CartItemResource::collection($cartItems),
       'message' => "{$variantName} added to wishlist.",
     ]);
   }
@@ -341,9 +348,16 @@ class CartService
 
     $wishlistItem->delete();
 
+    // ✅ Reload user's cart (or wishlist)
+    $cartItems = Cart::with(['productVariant.product', 'productVariant.category', 'productVariant.inventory', 'productVariant.galleries'])
+      ->where('user_id', $userId)
+      ->where('is_saved_for_later', true)
+      ->get();
+
+
     return response()->json([
       'success' => true,
-      'data' => [],
+      'data' => CartItemResource::collection($cartItems),
       'message' => 'Item removed from wishlist.',
     ]);
   }

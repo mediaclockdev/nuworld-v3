@@ -99,6 +99,7 @@ Route::prefix('v1')->group(function () {
       Route::post('/remove-from-wishlist', 'removeFromWishlist')->name('remove.from.wishlist');
       Route::post('/move-to-cart', 'addToCart')->name('add.to.cart');
       Route::post('/move-to-wishlist', 'addToWishlist')->name('move.to.wishlist');
+      Route::post('/move-or-remove-wishlist', 'moveOrRemoveWishlist')->name('move.or.remove.wishlist');
       Route::post('/update-quantity', 'updateQuantity')->name('updateQuantity');
     });
     // My Cart/Wishlist Routes
