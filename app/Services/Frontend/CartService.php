@@ -260,7 +260,7 @@ class CartService
       return response()->json([
         'success' => false,
         'data' => [],
-        'message' => "{$variantName} is already in your wishlist.",
+        'message' => "Item is already in your wishlist.",
       ]);
     }
 
@@ -280,7 +280,7 @@ class CartService
     return response()->json([
       'success' => true,
       'data' => CartItemResource::collection($cartItems),
-      'message' => "{$variantName} added to wishlist.",
+      'message' => "Item added to wishlist.",
     ]);
   }
 
