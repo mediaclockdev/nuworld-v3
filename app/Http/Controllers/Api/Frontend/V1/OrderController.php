@@ -127,6 +127,7 @@ class OrderController extends Controller
     return $this->checkoutService->applyCouponApi($request->validated());
   }
 
+
   public function couponRemove(): JsonResponse
   {
     return $this->checkoutService->removeCouponApi();
