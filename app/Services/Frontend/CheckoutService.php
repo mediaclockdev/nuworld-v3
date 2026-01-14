@@ -504,12 +504,23 @@ class CheckoutService
     $existingOrder = $this->getPendingOrderForUser(user()->id);
 
     if ($existingOrder && $this->isCartSameAsOrder($existingOrder, $cartItems->toArray())) {
+
+      $totals = $this->calculateTotals($cartItems, $couponDiscount);
+
       $existingOrder->update([
-        'payment_method' => $paymentMethod,
+        'payment_method'  => $paymentMethod,
+        'coupon_id'       => $couponId,
+        'coupon_type'     => $couponType,
+        'coupon_discount' => $couponDiscount,
+        'order_total'     => $totals['subtotal'],
+        'net_total'       => $totals['total'],
+        'total_tax'       => $totals['total_tax'],
+        'other_charges'   => json_encode($totals['other_charges']),
       ]);
 
       return $existingOrder;
     }
+
 
     $totals = $this->calculateTotals($cartItems, $couponDiscount);
 
