@@ -186,8 +186,8 @@ if (!function_exists('userAvtarImageById')) {
     }
 
     $user = $guard == 'admin'
-      ? Admin::where('id', $id)->first(['avatar', 'first_name', 'last_name'])
-      : User::where('id', $id)->first(['avatar', 'first_name', 'last_name']);
+      ? Admin::where('id', $id)->first(['image', 'first_name', 'last_name'])
+      : User::where('id', $id)->first(['image', 'first_name', 'last_name']);
 
     $imageName = $user ? $user->image : null;
 
