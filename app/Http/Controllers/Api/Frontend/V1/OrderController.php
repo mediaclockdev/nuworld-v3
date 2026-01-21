@@ -89,6 +89,7 @@ class OrderController extends Controller
     ]);
   }
 
+
   public function changePaymentMethod()
   {
     $paymentMethods = PaymentSettings::whereIn('gateway_name', ['Stripe', 'Cash On Delivery'])

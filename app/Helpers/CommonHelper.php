@@ -178,6 +178,53 @@ if (!function_exists('userImageById')) {
   }
 }
 
+if (!function_exists('userAvtarImageById')) {
+  function userAvtarImageById($guard = null, $id = 0)
+  {
+    if (!Schema::hasTable('admins')) {
+      return null; // Prevent crash if table doesn't exist
+    }
+
+    $user = $guard == 'admin'
+      ? Admin::where('id', $id)->first(['avatar', 'first_name', 'last_name'])
+      : User::where('id', $id)->first(['avatar', 'first_name', 'last_name']);
+
+    $imageName = $user ? $user->image : null;
+
+    if ($imageName) {
+      $imagePath = 'public/storage/uploads/' . $guard . '/profile/' . $imageName;
+      $thumbnailPath = 'public/storage/uploads/' . $guard . '/profile/thumbnail/' . $imageName;
+
+      return [
+        'image'     => url($imagePath),
+        'thumbnail' => url($thumbnailPath),
+      ];
+    } else {
+      // Handle initials if image not found
+      $firstName = $user->first_name ?? 'N';
+      $lastName = $user->last_name ?? null;
+
+      $initials = strtoupper(mb_substr($firstName, 0, 1));
+      if (!empty($lastName)) {
+        $initials .= strtoupper(mb_substr($lastName, 0, 1));
+      }
+
+      $svg = base64_encode("
+        <svg xmlns='http://www.w3.org/2000/svg' width='100' height='100'>
+          <rect width='100%' height='100%' fill='#555'/>
+          <text x='50%' y='50%' font-size='34' font-family='Arial' font-weight='bold' fill='#ffffff' text-anchor='middle' dy='.3em'>$initials</text>
+        </svg>
+      ");
+
+      return [
+        'image'     => "data:image/svg+xml;base64,{$svg}",
+        'thumbnail' => "data:image/svg+xml;base64,{$svg}",
+      ];
+    }
+  }
+}
+
+
 if (!function_exists('hasUserPermission')) {
   function hasUserPermission($routeName)
   {

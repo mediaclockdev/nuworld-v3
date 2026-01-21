@@ -37,6 +37,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/products-search', 'search')->name('products.search');
     Route::get('/attribute-options', 'attributeOptions')->name('attribute.options');
     Route::post('/products/resolve-variant', 'resolveVariant')->name('products.resolve-variant'); // optional
+    Route::post('/try-on', 'tryOn')->name('try-on'); // optional
 
   });
   // Product routes
@@ -71,6 +72,7 @@ Route::prefix('v1')->group(function () {
       Route::get('/user-profile', 'fetchUserData')->name('fetch-user-profile');
       Route::post('/user-profile', 'updateUserData')->name('update-user-profile');
       Route::post('/user-profile-image', 'updateUserImage')->name('update-user-image');
+      Route::post('/user-avtar-image', 'updateAvtarImage')->name('update-avtar-image');
       Route::post('/user-orders', 'updateUserData')->name('update-user-profile');
       Route::get('/user-address', 'fetchUserAddress')->name('fetch-user-address');
       Route::post('/user-address', 'updateUserAddress')->name('update-user-address');

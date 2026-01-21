@@ -24,6 +24,7 @@ class UserProfileResource extends JsonResource
       'gender' => $this['user_data']->gender,
       'dob' => $this['user_data']->dob,
       'default_profile_image' => $this['user_image'], // coming from service
+      'default_avtar_profile_image' => $this['user_avtar_image'], // coming from service
     ];
   }
 }

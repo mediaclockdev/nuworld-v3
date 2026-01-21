@@ -31,10 +31,13 @@ class UserProfile
     $guard = $guard === 'api' ? 'web' : $guard;
 
     $image = userImageById($guard, $user->id);
+    $avtarimage = userAvtarImageById($guard, $user->id);
+
 
     return [
       'user_data' => $user, // ✅ REQUIRED
       'user_image' => $image['image'] ?? null,
+      'user_avtar_image' => $avtarimage['image'] ?? null,
     ];
   }
 

@@ -43,6 +43,10 @@ return [
   'huggingface' => [
     'api_key' => env('HUGGINGFACE_API_KEY'),
   ],
+  'api4ai_tryon' => [
+    'key' => env('API4AI_TRYON_KEY'),
+    'url' => 'https://api4.ai/v1/virtual-try-on/results',
+  ],
 
 
 ];

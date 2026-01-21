@@ -24,6 +24,8 @@ use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 
 
 class ProductController extends Controller
@@ -48,6 +50,84 @@ class ProductController extends Controller
     $data = $this->productService->getLatestProducts($limit, 'latest');
     return ApiResponse::success(ProductResource::collection($data), __('response.success.fetch', ['item' => 'Latest Products']));
   }
+
+  public function tryOn(Request $request)
+  {
+    ifApiTokenExists(); // keep your auth if needed
+
+    $request->validate([
+      'avatar'  => 'required|image',
+      'product' => 'required|image',
+    ]);
+
+    // 1. Save uploads to public disk
+    $avatarPath  = $request->file('avatar')->store('avatars', 'public');
+    $productPath = $request->file('product')->store('products', 'public');
+
+    // 2. Build full paths (Windows safe)
+    $avatarFullPath  = storage_path('app/public/' . $avatarPath);
+    $productFullPath = storage_path('app/public/' . $productPath);
+
+    if (!file_exists($avatarFullPath)) {
+      return response()->json(['success' => false, 'error' => 'Avatar file missing'], 500);
+    }
+
+    if (!file_exists($productFullPath)) {
+      return response()->json(['success' => false, 'error' => 'Product file missing'], 500);
+    }
+
+    // 3. API4AI DEMO endpoint (NO API KEY REQUIRED)
+    $url = 'https://demo.api4ai.cloud/virtual-try-on/v1/results';
+
+    // 4. Call API
+    try {
+      $response = Http::withoutVerifying()
+        ->timeout(300)
+        ->attach('image', fopen($avatarFullPath, 'r'), 'person.jpg')
+        ->attach('image-apparel', fopen($productFullPath, 'r'), 'cloth.jpg')
+        ->post($url);
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'error' => 'API connection failed: ' . $e->getMessage()
+      ], 500);
+    }
+
+    if (!$response->successful()) {
+      return response()->json([
+        'success' => false,
+        'error' => 'Try-On API error',
+        'details' => $response->body()
+      ], 500);
+    }
+
+    // 5. Parse API response
+    $json = $response->json();
+
+    // API4AI response format
+    $base64Img = $json['results'][0]['entities'][0]['image'] ?? null;
+
+    if (!$base64Img) {
+      return response()->json([
+        'success' => false,
+        'error' => 'No image returned from API',
+        'api_response' => $json
+      ], 500);
+    }
+
+    // 6. Save generated image
+    $imageData = base64_decode($base64Img);
+    $resultPath = 'tryon/' . uniqid() . '.png';
+    Storage::disk('public')->put($resultPath, $imageData);
+
+    // 7. Return result URL
+    return response()->json([
+      'success'    => true,
+      'result_url' => asset('public/storage/' . $resultPath),
+    ]);
+  }
+
+
 
 
 

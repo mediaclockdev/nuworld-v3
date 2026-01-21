@@ -103,6 +103,51 @@ class UserController extends Controller
     }
   }
 
+  public function updateAvtarImage(Request $request): JsonResponse
+  {
+    $request->validate([
+      'avtar_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+    ]);
+
+    try {
+      $user = Auth::user();
+
+      $guard = Auth::getDefaultDriver();
+      $guard = $guard === 'api' ? 'web' : $guard;
+
+      // Delete old image
+      if ($user->image) {
+        Storage::disk('public')->delete("uploads/{$guard}/profile/{$user->image}");
+      }
+
+      // Store image (FORCE public disk)
+      $file = $request->file('avtar_image');
+      $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+
+      Storage::disk('public')->putFileAs(
+        "uploads/{$guard}/profile",
+        $file,
+        $fileName
+      );
+
+      // Update DB
+      $user->update([
+        'image' => $fileName,
+      ]);
+
+      //$profile = UserProfile::getProfileInfo();
+
+      $profile = UserProfile::getProfileInfo();
+
+      return ApiResponse::success(
+        new UserProfileResource($profile),
+        __('response.success.update', ['item' => 'User Data'])
+      );
+    } catch (\Throwable $e) {
+      return ApiResponse::error($e->getMessage(), 400);
+    }
+  }
+
 
 
   public function fetchUserAddress(): JsonResponse
