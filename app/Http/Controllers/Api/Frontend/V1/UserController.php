@@ -106,7 +106,8 @@ class UserController extends Controller
   public function updateAvtarImage(Request $request): JsonResponse
   {
     $request->validate([
-      'avtar_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
+      'is_avatar' => ['required', 'boolean'],
+      'url' => ['required', 'string'],
     ]);
 
     try {
@@ -120,22 +121,42 @@ class UserController extends Controller
         Storage::disk('public')->delete("uploads/{$guard}/profile/{$user->image}");
       }
 
-      // Store image (FORCE public disk)
-      $file = $request->file('avtar_image');
-      $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+      $fileName = uniqid() . '.png';
+      $path = "uploads/{$guard}/profile/{$fileName}";
 
-      Storage::disk('public')->putFileAs(
-        "uploads/{$guard}/profile",
-        $file,
-        $fileName
-      );
+      // CASE 1: URL avatar (AI / remote image)
+      if ($request->is_avatar === true) {
+        $imageContents = file_get_contents($request->url);
+
+        if (!$imageContents) {
+          return ApiResponse::error("Failed to download avatar image", 400);
+        }
+
+        Storage::disk('public')->put($path, $imageContents);
+      }
+
+      // CASE 2: Base64 image
+      else {
+        $base64 = $request->url;
+
+        // Remove base64 header if exists
+        if (str_contains($base64, ',')) {
+          $base64 = explode(',', $base64)[1];
+        }
+
+        $imageContents = base64_decode($base64);
+
+        if (!$imageContents) {
+          return ApiResponse::error("Invalid base64 image", 400);
+        }
+
+        Storage::disk('public')->put($path, $imageContents);
+      }
 
       // Update DB
       $user->update([
         'image' => $fileName,
       ]);
-
-      //$profile = UserProfile::getProfileInfo();
 
       $profile = UserProfile::getProfileInfo();
 
@@ -147,6 +168,7 @@ class UserController extends Controller
       return ApiResponse::error($e->getMessage(), 400);
     }
   }
+
 
 
 
