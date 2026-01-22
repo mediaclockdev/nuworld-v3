@@ -158,10 +158,15 @@ class UserController extends Controller
         // 🔴 VALIDATE PORTRAIT
         if (!PortraitValidator::isValid($tempPath)) {
           @unlink($tempPath);
-          return ApiResponse::error(
-            "Image must be a clear human portrait photo (one face, front, close-up)",
-            422
-          );
+          // return ApiResponse::error(
+          //   "Image must be a clear human portrait photo (one face, front, close-up)",
+          //   422
+          // );
+          return response()->json([
+            'success' => false,
+            'message' => "Image must be a clear human portrait photo (one face, front, close-up)",
+
+          ], 422);
         }
 
         @unlink($tempPath);
