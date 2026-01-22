@@ -77,7 +77,8 @@ class ProductController extends Controller
     }
 
     // 3. API4AI DEMO endpoint (NO API KEY REQUIRED)
-    $url = 'https://demo.api4ai.cloud/virtual-try-on/v1/results';
+    //$url = 'https://demo.api4ai.cloud/virtual-try-on/v1/results';
+    $url = 'https://api4.ai/v1/virtual-try-on/results';
 
     // 4. Call API
     try {
