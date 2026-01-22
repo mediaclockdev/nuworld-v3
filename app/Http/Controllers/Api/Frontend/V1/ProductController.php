@@ -51,36 +51,124 @@ class ProductController extends Controller
     return ApiResponse::success(ProductResource::collection($data), __('response.success.fetch', ['item' => 'Latest Products']));
   }
 
+  // public function tryOn(Request $request)
+  // {
+  //   ifApiTokenExists(); // keep your auth if needed
+
+  //   $request->validate([
+  //     'avatar'  => 'required|image',
+  //     'product' => 'required|image',
+  //   ]);
+
+  //   // 1. Save uploads to public disk
+  //   $avatarPath  = $request->file('avatar')->store('avatars', 'public');
+  //   $productPath = $request->file('product')->store('products', 'public');
+
+  //   // 2. Build full paths (Windows safe)
+  //   $avatarFullPath  = storage_path('app/public/' . $avatarPath);
+  //   $productFullPath = storage_path('app/public/' . $productPath);
+
+  //   if (!file_exists($avatarFullPath)) {
+  //     return response()->json(['success' => false, 'error' => 'Avatar file missing'], 500);
+  //   }
+
+  //   if (!file_exists($productFullPath)) {
+  //     return response()->json(['success' => false, 'error' => 'Product file missing'], 500);
+  //   }
+
+  //   // 3. API4AI DEMO endpoint (NO API KEY REQUIRED)
+  //   $url = 'https://demo.api4ai.cloud/virtual-try-on/v1/results';
+  //   //  $url = 'https://api4.ai/v1/virtual-try-on/results';
+
+  //   // 4. Call API
+  //   try {
+  //     $response = Http::withoutVerifying()
+  //       ->timeout(300)
+  //       ->attach('image', fopen($avatarFullPath, 'r'), 'person.jpg')
+  //       ->attach('image-apparel', fopen($productFullPath, 'r'), 'cloth.jpg')
+  //       ->post($url);
+  //   } catch (\Exception $e) {
+  //     return response()->json([
+  //       'success' => false,
+  //       'error' => 'API connection failed: ' . $e->getMessage()
+  //     ], 500);
+  //   }
+
+  //   if (!$response->successful()) {
+  //     return response()->json([
+  //       'success' => false,
+  //       'error' => 'Try-On API error',
+  //       'details' => $response->body()
+  //     ], 500);
+  //   }
+
+  //   // 5. Parse API response
+  //   $json = $response->json();
+
+  //   // API4AI response format
+  //   $base64Img = $json['results'][0]['entities'][0]['image'] ?? null;
+
+  //   if (!$base64Img) {
+  //     return response()->json([
+  //       'success' => false,
+  //       'error' => 'No image returned from API',
+  //       'api_response' => $json
+  //     ], 500);
+  //   }
+
+  //   // 6. Save generated image
+  //   $imageData = base64_decode($base64Img);
+  //   $resultPath = 'tryon/' . uniqid() . '.png';
+  //   Storage::disk('public')->put($resultPath, $imageData);
+
+  //   // 7. Return result URL
+  //   return response()->json([
+  //     'success'    => true,
+  //     'result_url' => asset('public/storage/' . $resultPath),
+  //   ]);
+  // }
+
   public function tryOn(Request $request)
   {
-    ifApiTokenExists(); // keep your auth if needed
+    ifApiTokenExists(); // your auth
 
     $request->validate([
-      'avatar'  => 'required|image',
-      'product' => 'required|image',
+      'avatar_url'  => 'required|url',
+      'product_url' => 'required|url',
     ]);
 
-    // 1. Save uploads to public disk
-    $avatarPath  = $request->file('avatar')->store('avatars', 'public');
-    $productPath = $request->file('product')->store('products', 'public');
+    // 1. Download images from URLs
+    try {
+      $avatarContent  = file_get_contents($request->avatar_url);
+      $productContent = file_get_contents($request->product_url);
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'error' => 'Failed to download images from URLs'
+      ], 400);
+    }
 
-    // 2. Build full paths (Windows safe)
+    // 2. Save to temp storage
+    $avatarPath  = 'avatars/' . uniqid() . '.jpg';
+    $productPath = 'products/' . uniqid() . '.jpg';
+
+    Storage::disk('public')->put($avatarPath, $avatarContent);
+    Storage::disk('public')->put($productPath, $productContent);
+
     $avatarFullPath  = storage_path('app/public/' . $avatarPath);
     $productFullPath = storage_path('app/public/' . $productPath);
 
-    if (!file_exists($avatarFullPath)) {
-      return response()->json(['success' => false, 'error' => 'Avatar file missing'], 500);
+    if (!file_exists($avatarFullPath) || !file_exists($productFullPath)) {
+      return response()->json([
+        'success' => false,
+        'error' => 'Failed to save downloaded images'
+      ], 500);
     }
 
-    if (!file_exists($productFullPath)) {
-      return response()->json(['success' => false, 'error' => 'Product file missing'], 500);
-    }
-
-    // 3. API4AI DEMO endpoint (NO API KEY REQUIRED)
+    // 3. API4AI DEMO endpoint
     $url = 'https://demo.api4ai.cloud/virtual-try-on/v1/results';
-    //  $url = 'https://api4.ai/v1/virtual-try-on/results';
 
-    // 4. Call API
+    // 4. Call Try-On API
     try {
       $response = Http::withoutVerifying()
         ->timeout(300)
@@ -90,14 +178,14 @@ class ProductController extends Controller
     } catch (\Exception $e) {
       return response()->json([
         'success' => false,
-        'error' => 'API connection failed: ' . $e->getMessage()
+        'error' => 'Try-On API connection failed: ' . $e->getMessage()
       ], 500);
     }
 
     if (!$response->successful()) {
       return response()->json([
         'success' => false,
-        'error' => 'Try-On API error',
+        'error'   => 'Try-On API error',
         'details' => $response->body()
       ], 500);
     }
@@ -105,13 +193,12 @@ class ProductController extends Controller
     // 5. Parse API response
     $json = $response->json();
 
-    // API4AI response format
     $base64Img = $json['results'][0]['entities'][0]['image'] ?? null;
 
     if (!$base64Img) {
       return response()->json([
         'success' => false,
-        'error' => 'No image returned from API',
+        'error' => 'No image returned from Try-On API',
         'api_response' => $json
       ], 500);
     }
@@ -121,7 +208,7 @@ class ProductController extends Controller
     $resultPath = 'tryon/' . uniqid() . '.png';
     Storage::disk('public')->put($resultPath, $imageData);
 
-    // 7. Return result URL
+    // 7. Return final URL
     return response()->json([
       'success'    => true,
       'result_url' => asset('public/storage/' . $resultPath),
