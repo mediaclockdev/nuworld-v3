@@ -1,0 +1,53 @@
+
+<?php
+
+namespace App\Services;
+
+
+use Illuminate\Support\Facades\Http;
+
+class PortraitValidator
+{
+  public static function isValid(string $imagePath): bool
+  {
+    $response = Http::asMultipart()
+      ->timeout(60)
+      ->post('https://api-us.faceplusplus.com/facepp/v3/detect', [
+        'api_key' => config('services.facepp.key'),
+        'api_secret' => config('services.facepp.secret'),
+        'image_file' => fopen($imagePath, 'r'),
+      ]);
+
+    if (!$response->ok()) {
+      return false;
+    }
+
+    $data = $response->json();
+
+    if (empty($data['faces'])) {
+      return false; // no face
+    }
+
+    // ❌ Reject group photos
+    if (count($data['faces']) !== 1) {
+      return false;
+    }
+
+    $face = $data['faces'][0]['face_rectangle'];
+
+    $imgW = $data['image_width'];
+    $imgH = $data['image_height'];
+
+    $faceArea = $face['width'] * $face['height'];
+    $imgArea = $imgW * $imgH;
+
+    $ratio = $faceArea / $imgArea;
+
+    // ❌ Face too small => not portrait style
+    if ($ratio < 0.20) {
+      return false;
+    }
+
+    return true; // ✅ proper human portrait
+  }
+}

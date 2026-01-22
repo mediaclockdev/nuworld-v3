@@ -47,6 +47,10 @@ return [
     'key' => env('API4AI_TRYON_KEY'),
     'url' => 'https://api4.ai/v1/virtual-try-on/results',
   ],
+  'facepp' => [
+    'key' => env('FACEPP_KEY'),
+    'secret' => env('FACEPP_SECRET'),
+  ],
 
 
 ];

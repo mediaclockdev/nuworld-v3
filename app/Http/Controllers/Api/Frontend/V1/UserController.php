@@ -20,6 +20,8 @@ use Illuminate\Support\Facades\Hash;
 use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use App\Services\PortraitValidator;
+
 
 class UserController extends Controller
 {
@@ -124,7 +126,7 @@ class UserController extends Controller
       $fileName = uniqid() . '.png';
       $path = "uploads/{$guard}/profile/{$fileName}";
 
-      // CASE 1: URL avatar (AI / remote image)
+      // CASE 1: URL avatar (AI image) -> skip validation
       if ($request->is_avatar === true) {
         $imageContents = file_get_contents($request->url);
 
@@ -135,11 +137,10 @@ class UserController extends Controller
         Storage::disk('public')->put($path, $imageContents);
       }
 
-      // CASE 2: Base64 image
+      // CASE 2: Base64 image -> MUST be real human portrait
       else {
         $base64 = $request->url;
 
-        // Remove base64 header if exists
         if (str_contains($base64, ',')) {
           $base64 = explode(',', $base64)[1];
         }
@@ -150,6 +151,22 @@ class UserController extends Controller
           return ApiResponse::error("Invalid base64 image", 400);
         }
 
+        // 🔽 TEMP FILE FOR FACE++ CHECK
+        $tempPath = storage_path('app/temp_portrait_check.png');
+        file_put_contents($tempPath, $imageContents);
+
+        // 🔴 VALIDATE PORTRAIT
+        if (!PortraitValidator::isValid($tempPath)) {
+          @unlink($tempPath);
+          return ApiResponse::error(
+            "Image must be a clear human portrait photo (one face, front, close-up)",
+            422
+          );
+        }
+
+        @unlink($tempPath);
+
+        // ✅ SAVE FINAL IMAGE
         Storage::disk('public')->put($path, $imageContents);
       }
 
@@ -170,13 +187,80 @@ class UserController extends Controller
   }
 
 
+  // public function updateAvtarImage(Request $request): JsonResponse
+  // {
+  //   $request->validate([
+  //     'is_avatar' => ['required', 'boolean'],
+  //     'url' => ['required', 'string'],
+  //   ]);
+
+  //   try {
+  //     $user = Auth::user();
+
+  //     $guard = Auth::getDefaultDriver();
+  //     $guard = $guard === 'api' ? 'web' : $guard;
+
+  //     // Delete old image
+  //     if ($user->image) {
+  //       Storage::disk('public')->delete("uploads/{$guard}/profile/{$user->image}");
+  //     }
+
+  //     $fileName = uniqid() . '.png';
+  //     $path = "uploads/{$guard}/profile/{$fileName}";
+
+  //     // CASE 1: URL avatar (AI / remote image)
+  //     if ($request->is_avatar === true) {
+  //       $imageContents = file_get_contents($request->url);
+
+  //       if (!$imageContents) {
+  //         return ApiResponse::error("Failed to download avatar image", 400);
+  //       }
+
+  //       Storage::disk('public')->put($path, $imageContents);
+  //     }
+
+  //     // CASE 2: Base64 image
+  //     else {
+  //       $base64 = $request->url;
+
+  //       // Remove base64 header if exists
+  //       if (str_contains($base64, ',')) {
+  //         $base64 = explode(',', $base64)[1];
+  //       }
+
+  //       $imageContents = base64_decode($base64);
+
+  //       if (!$imageContents) {
+  //         return ApiResponse::error("Invalid base64 image", 400);
+  //       }
+
+  //       Storage::disk('public')->put($path, $imageContents);
+  //     }
+
+  //     // Update DB
+  //     $user->update([
+  //       'image' => $fileName,
+  //     ]);
+
+  //     $profile = UserProfile::getProfileInfo();
+
+  //     return ApiResponse::success(
+  //       new UserProfileResource($profile),
+  //       __('response.success.update', ['item' => 'User Data'])
+  //     );
+  //   } catch (\Throwable $e) {
+  //     return ApiResponse::error($e->getMessage(), 400);
+  //   }
+  // }
+
+
 
 
   public function fetchUserAddress(): JsonResponse
   {
     //dd(auth()->user());
     $country = Country::find(config('defaults.country_id'));
-    // pd($country);
+    // pd($country);s
     $data = [
       'country' => $country ? [
         'id'   => Hashids::encode($country->id),
