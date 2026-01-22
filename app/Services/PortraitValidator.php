@@ -2,13 +2,21 @@
 
 namespace App\Services;
 
-
 use Illuminate\Support\Facades\Http;
 
 class PortraitValidator
 {
   public static function isValid(string $imagePath): bool
   {
+    // Get image size locally
+    $size = getimagesize($imagePath);
+    if (!$size) {
+      return false;
+    }
+
+    $imgW = $size[0];
+    $imgH = $size[1];
+
     $response = Http::asMultipart()
       ->timeout(60)
       ->post('https://api-us.faceplusplus.com/facepp/v3/detect', [
@@ -23,8 +31,9 @@ class PortraitValidator
 
     $data = $response->json();
 
+    // ❌ No face
     if (empty($data['faces'])) {
-      return false; // no face
+      return false;
     }
 
     // ❌ Reject group photos
@@ -34,19 +43,16 @@ class PortraitValidator
 
     $face = $data['faces'][0]['face_rectangle'];
 
-    $imgW = $data['image_width'];
-    $imgH = $data['image_height'];
-
     $faceArea = $face['width'] * $face['height'];
-    $imgArea = $imgW * $imgH;
+    $imgArea  = $imgW * $imgH;
 
     $ratio = $faceArea / $imgArea;
 
-    // ❌ Face too small => not portrait style
+    // ❌ Face too small → not portrait
     if ($ratio < 0.20) {
       return false;
     }
 
-    return true; // ✅ proper human portrait
+    return true; // ✅ Valid portrait
   }
 }
