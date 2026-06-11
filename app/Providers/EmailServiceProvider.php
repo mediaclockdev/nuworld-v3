@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Mail;
 use App\Models\MailSetting;
+use SendGrid\Mail\Mail as SendGridMail;
+
 
 class EmailServiceProvider extends ServiceProvider
 {
@@ -27,42 +29,94 @@ class EmailServiceProvider extends ServiceProvider
          *
          * @return void
          */
-        public function sendEmail(string $email, string $subject, string $view, array $data = [], array $cc = [], array $bcc = []): void
-        {
-          try {
-            $mailSetting = MailSetting::first();
+        // public function sendEmail(string $email, string $subject, string $view, array $data = [], array $cc = [], array $bcc = []): void
+        // {
+        //   try {
+        //     $mailSetting = MailSetting::first();
 
-            if ($mailSetting) {
-              // Dynamically configure mail settings
-              config([
-                'mail.mailers.smtp' => [
-                  'transport' => $mailSetting->mail_mailer,
-                  'host' => $mailSetting->mail_host,
-                  'port' => $mailSetting->mail_port,
-                  'encryption' => $mailSetting->mail_encryption,
-                  'username' => $mailSetting->mail_username,
-                  'password' => $mailSetting->mail_password,
-                ],
-                'mail.from' => [
-                  'address' => $mailSetting->mail_from_address,
-                  'name' => $mailSetting->mail_from_name,
-                ],
-              ]);
+        //     if ($mailSetting) {
+        //       // Dynamically configure mail settings
+        //       config([
+        //         'mail.mailers.smtp' => [
+        //           'transport' => $mailSetting->mail_mailer,
+        //           'host' => $mailSetting->mail_host,
+        //           'port' => $mailSetting->mail_port,
+        //           'encryption' => $mailSetting->mail_encryption,
+        //           'username' => $mailSetting->mail_username,
+        //           'password' => $mailSetting->mail_password,
+        //         ],
+        //         'mail.from' => [
+        //           'address' => $mailSetting->mail_from_address,
+        //           'name' => $mailSetting->mail_from_name,
+        //         ],
+        //       ]);
+        //     }
+
+        //     Mail::send($view, $data, function ($message) use ($email, $subject, $cc, $bcc) {
+        //       $message->to($email)->subject($subject);
+
+        //       if (!empty($cc)) {
+        //         $message->cc($cc);
+        //       }
+
+        //       if (!empty($bcc)) {
+        //         $message->bcc($bcc);
+        //       }
+        //     });
+        //   } catch (\Exception $e) {
+        //     throw new \Exception('Email sending failed: ' . $e->getMessage());
+        //   }
+        // }
+
+
+        public function sendEmail(
+          string $email,
+          string $subject,
+          string $view,
+          array $data = [],
+          array $cc = [],
+          array $bcc = []
+        ): void {
+          try {
+
+            $html = view($view, $data)->render();
+
+            $message = new SendGridMail();
+
+            $message->setFrom(
+              env('SENDGRID_FROM_EMAIL'),
+              config('app.name')
+            );
+
+            $message->setSubject($subject);
+            $message->addTo($email);
+
+            foreach ($cc as $address) {
+              $message->addCc($address);
             }
 
-            Mail::send($view, $data, function ($message) use ($email, $subject, $cc, $bcc) {
-              $message->to($email)->subject($subject);
+            foreach ($bcc as $address) {
+              $message->addBcc($address);
+            }
 
-              if (!empty($cc)) {
-                $message->cc($cc);
-              }
+            $message->addContent(
+              "text/html",
+              $html
+            );
 
-              if (!empty($bcc)) {
-                $message->bcc($bcc);
-              }
-            });
+            $sendgrid = new \SendGrid(
+              env('SENDGRID_API_KEY')
+            );
+
+            $response = $sendgrid->send($message);
+
+            if ($response->statusCode() >= 400) {
+              throw new \Exception($response->body());
+            }
           } catch (\Exception $e) {
-            throw new \Exception('Email sending failed: ' . $e->getMessage());
+            throw new \Exception(
+              'Email sending failed: ' . $e->getMessage()
+            );
           }
         }
       };
