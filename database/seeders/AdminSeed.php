@@ -21,6 +21,7 @@ class AdminSeed extends Seeder
         'last_name' => 'Bhowmik',
         'email' => 'sb@mediaclock.com.au',
         'phone' => '9433857585',
+        
       ],
       // others are minimal seed admins
       2 => ['first_name' => 'Ritu', 'last_name' => 'Admin', 'email' => 'ritu@mediaclock.com.au'],

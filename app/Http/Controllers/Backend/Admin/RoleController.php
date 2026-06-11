@@ -56,7 +56,7 @@ class RoleController extends Controller
   }
 
   public function toggle(int $id = 0): JsonResponse
-  {
+  { 
     return $this->commonService->toggle($this->model, $id);
   }
 

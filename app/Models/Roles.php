@@ -11,6 +11,7 @@ class Roles extends Model
   use SoftDeletes;
   protected $fillable = ['name', 'description', 'status', 'created_by', 'updated_by'];
 
+
   public function admins()
   {
     return $this->belongsToMany(Admin::class, 'admin_role', 'role_id', 'admin_id');
@@ -20,6 +21,7 @@ class Roles extends Model
   {
     return $this->belongsToMany(Permission::class, 'role_permissions', 'role_id', 'permission_id');
   }
+
 
   public static function store($request, int $id = 0)
   {
@@ -72,6 +74,7 @@ class Roles extends Model
 
     return response()->json(['success' => true, 'message' => __('response.success.delete', ['item' => 'Role'])]);
   }
+
 
   public static function scopeSearch($query, $search)
   {

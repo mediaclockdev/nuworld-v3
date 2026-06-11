@@ -38,3 +38,4 @@ class UpdateProfileRequest extends BaseRequest
     ];
   }
 }
+ 

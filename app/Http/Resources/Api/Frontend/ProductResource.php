@@ -37,6 +37,9 @@ class ProductResource extends JsonResource
       'image' => !empty($this->galleries[0]['file_name'])
         ? asset("public/storage/uploads/media/products/images/{$this->galleries[0]['file_name']}")
         : asset('public/backend/assetss/images/products/product_thumb.jpg'),
+      'hover_image' => !empty($this->galleries[1]['file_name'])
+        ? asset("public/storage/uploads/media/products/images/{$this->galleries[1]['file_name']}")
+        : asset('public/backend/assetss/images/products/product_thumb.jpg'),
       'is_in_cart' => isInCart($this->id, false),
       'is_in_wishlist' => isInCart($this->id, true),
       'avg_rating' => $averageRating !== null ? round((float) $averageRating, 1) : 0.0,
