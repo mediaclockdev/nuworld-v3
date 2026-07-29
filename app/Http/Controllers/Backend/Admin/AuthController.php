@@ -68,10 +68,20 @@ class AuthController extends Controller
       return response()->json(['success' => true, 'message' => trans('response.auth.success'), 'otp' => false]);
     }
 
-    $response = app('SendEmailService')->OTP('admin', 'login')->getData();
+    try {
+      $response = app('SendEmailService')->OTP('admin', 'login')->getData();
+    } catch (\Throwable $e) {
+      \Log::error($e->getMessage());
+      \Log::error($e->getTraceAsString());
+
+      return response()->json([
+        'success' => false,
+        'message' => $e->getMessage()
+      ], 500);
+    }
 
     if ($response->success) {
- 
+
       if ($request->remember === "true")
         session()->put('ecomm_email', $request->email);
       else
