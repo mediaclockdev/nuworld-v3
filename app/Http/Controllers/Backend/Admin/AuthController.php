@@ -71,7 +71,7 @@ class AuthController extends Controller
     $response = app('SendEmailService')->OTP('admin', 'login')->getData();
 
     if ($response->success) {
-
+ 
       if ($request->remember === "true")
         session()->put('ecomm_email', $request->email);
       else
