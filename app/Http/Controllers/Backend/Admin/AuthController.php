@@ -71,8 +71,8 @@ class AuthController extends Controller
     try {
       $response = app('SendEmailService')->OTP('admin', 'login')->getData();
     } catch (\Throwable $e) {
-      \Log::error($e->getMessage());
-      \Log::error($e->getTraceAsString());
+      // \Log::error($e->getMessage());
+      // \Log::error($e->getTraceAsString());
 
       return response()->json([
         'success' => false,
