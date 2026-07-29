@@ -13,6 +13,8 @@ class AdminSeed extends Seeder
     $defaultPassword = Hash::make('marooncrane2025');
     $now = now();
 
+    
+
     // 1) Ensure admins with explicit ids exist (1..7). id=1 uses your real info.
     $adminsToEnsure = [
       1 => [
@@ -21,7 +23,7 @@ class AdminSeed extends Seeder
         'last_name' => 'Bhowmik',
         'email' => 'sb@mediaclock.com.au',
         'phone' => '9433857585',
-        
+
       ],
       // others are minimal seed admins
       2 => ['first_name' => 'Ritu', 'last_name' => 'Admin', 'email' => 'ritu@mediaclock.com.au'],
