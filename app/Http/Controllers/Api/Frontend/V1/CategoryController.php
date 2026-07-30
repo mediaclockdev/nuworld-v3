@@ -24,11 +24,24 @@ class CategoryController extends Controller
 {
   public function __construct(private CategoryService $categoryService, private BannerService $bannerService, private ProductService $productService) {}
 
-  public function getCategories()
+  // public function getCategories()
+  // {
+  //   ifApiTokenExists();
+
+  //   $categories = $this->categoryService->getNestedCategories(0, 7);
+
+  //   return ApiResponse::success([
+  //     'categories_nested' => CategoryResource::collection($categories),
+  //   ], __('response.success.fetch', ['item' => 'Category Page Data']));
+  // }
+
+  public function getCategories(Request $request)
   {
     ifApiTokenExists();
 
-    $categories = $this->categoryService->getNestedCategories(0, 7);
+    $slug = $request->get('category'); // male / female
+
+    $categories = $this->categoryService->getNestedCategories($slug);
 
     return ApiResponse::success([
       'categories_nested' => CategoryResource::collection($categories),
