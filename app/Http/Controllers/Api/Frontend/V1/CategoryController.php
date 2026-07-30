@@ -39,14 +39,27 @@ class CategoryController extends Controller
   {
     ifApiTokenExists();
 
-    $slug = $request->get('category'); // male / female
+    $category = $request->query('category'); // male/female
 
-    $categories = $this->categoryService->getNestedCategories($slug);
+    $categories = $this->categoryService->getNestedCategories($category);
 
     return ApiResponse::success([
       'categories_nested' => CategoryResource::collection($categories),
     ], __('response.success.fetch', ['item' => 'Category Page Data']));
   }
+
+  // public function getCategories(Request $request)
+  // {
+  //   ifApiTokenExists();
+
+  //   $slug = $request->get('category'); // male / female
+
+  //   $categories = $this->categoryService->getNestedCategories($slug);
+
+  //   return ApiResponse::success([
+  //     'categories_nested' => CategoryResource::collection($categories),
+  //   ], __('response.success.fetch', ['item' => 'Category Page Data']));
+  // }
   // public function getCategoryBySlug($slug = null)
   // {
   //   ifApiTokenExists();

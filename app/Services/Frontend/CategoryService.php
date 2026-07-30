@@ -180,11 +180,39 @@ class CategoryService
   //     ->get();
   // }
 
+  // public function getNestedCategories(?string $slug = null, int $limit = 7)
+  // {
+  //   if ($slug) {
+  //     $parent = ProductCategory::where('slug', $slug)->firstOrFail();
+
+  //     $parentId = $parent->id;
+  //   } else {
+  //     $parentId = 0;
+  //   }
+
+  //   return ProductCategory::with([
+  //     'children' => function ($q) {
+  //       $q->select('id', 'title', 'slug', 'parent_id', 'sequence', 'category_image')
+  //         ->orderBy('sequence')
+  //         ->with([
+  //           'children' => function ($q2) {
+  //             $q2->select('id', 'title', 'slug', 'parent_id', 'sequence', 'category_image')
+  //               ->orderBy('sequence');
+  //           }
+  //         ]);
+  //     }
+  //   ])
+  //     ->select('id', 'title', 'slug', 'parent_id', 'sequence', 'category_image')
+  //     ->where('parent_id', $parentId)
+  //     ->orderBy('sequence')
+  //     ->take($limit)
+  //     ->get();
+  // }
+
   public function getNestedCategories(?string $slug = null, int $limit = 7)
   {
     if ($slug) {
       $parent = ProductCategory::where('slug', $slug)->firstOrFail();
-
       $parentId = $parent->id;
     } else {
       $parentId = 0;
