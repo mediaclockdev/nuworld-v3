@@ -29,38 +29,29 @@ class ImageUploadService
    */
   public function uploadImage($image, string $directory = '', string $imageType = '', bool $genThumbnail = true): array
   {
-    // Define directory structure
     $folder = "uploads/$directory/$imageType";
     $fileName = uniqid() . '.webp';
 
-    // Ensure the directory exists
     if (!Storage::disk('public')->exists($folder)) {
       Storage::disk('public')->makeDirectory($folder);
     }
 
     try {
-      // Store original image in WebP format
+
       $imageWebP = $this->manager->read($image->getRealPath())->toWebp(90);
+
       $imagePath = "$folder/$fileName";
-      $thumbnailPath = "$folder/thumbnail/$fileName";
-      Storage::disk('public')->put($imagePath, $imageWebP);
 
-      if (!file_exists(Storage::disk('public')->path($imagePath)))
-        return [
-          'filename' => '',
-          'path' => '',
-        ];
+      $result = Storage::disk('public')->put($imagePath, (string) $imageWebP);
 
-      // Generate and store thumbnail
-      if ($genThumbnail)
-        $this->createThumbnail($image, $thumbnailPath);
-
-      return [
-        'filename' => $fileName,
-        'path' => $imagePath,
-      ];
-    } catch (Exception $e) {
-      throw new Exception('Failed to upload image: ' . $e->getMessage());
+      dd([
+        'put_result'      => $result,
+        'storage_exists'  => Storage::disk('public')->exists($imagePath),
+        'absolute_path'   => Storage::disk('public')->path($imagePath),
+        'php_exists'      => file_exists(Storage::disk('public')->path($imagePath)),
+      ]);
+    } catch (\Throwable $e) {
+      dd($e->getMessage());
     }
   }
 
