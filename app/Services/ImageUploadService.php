@@ -27,9 +27,10 @@ class ImageUploadService
    * @return array
    * @throws Exception
    */
+
   public function uploadImage($image, string $directory = '', string $imageType = '', bool $genThumbnail = true): array
   {
-    $folder = "uploads/$directory/$imageType";
+    $folder = "uploads/{$directory}/{$imageType}";
     $fileName = uniqid() . '.webp';
 
     if (!Storage::disk('public')->exists($folder)) {
@@ -37,21 +38,40 @@ class ImageUploadService
     }
 
     try {
+      $encodedImage = $this->manager
+        ->read($image->getRealPath())
+        ->toWebp(90);
 
-      $imageWebP = $this->manager->read($image->getRealPath())->toWebp(90);
+      $imagePath = "{$folder}/{$fileName}";
 
-      $imagePath = "$folder/$fileName";
+      $written = Storage::disk('public')->put(
+        $imagePath,
+        (string) $encodedImage
+      );
 
-      $result = Storage::disk('public')->put($imagePath, (string) $imageWebP);
+      if (!$written) {
+        throw new \Exception(
+          "Failed to write image to: " . Storage::disk('public')->path($imagePath)
+        );
+      }
 
-      dd([
-        'put_result'      => $result,
-        'storage_exists'  => Storage::disk('public')->exists($imagePath),
-        'absolute_path'   => Storage::disk('public')->path($imagePath),
-        'php_exists'      => file_exists(Storage::disk('public')->path($imagePath)),
-      ]);
+      if (!Storage::disk('public')->exists($imagePath)) {
+        throw new \Exception(
+          "Image was not found after writing: " . Storage::disk('public')->path($imagePath)
+        );
+      }
+
+      if ($genThumbnail) {
+        $thumbnailPath = "{$folder}/thumbnail/{$fileName}";
+        $this->createThumbnail($image, $thumbnailPath);
+      }
+
+      return [
+        'filename' => $fileName,
+        'path' => $imagePath,
+      ];
     } catch (\Throwable $e) {
-      dd($e->getMessage());
+      throw new \Exception('Failed to upload image: ' . $e->getMessage());
     }
   }
 
