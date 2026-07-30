@@ -102,35 +102,164 @@ class CategoryController extends Controller
   //   ], __('response.success.fetch', ['item' => 'Category']));
   // }
 
+  // public function getCategoryBySlug(Request $request, $slug = null)
+  // {
+  //   ifApiTokenExists();
+
+  //   $sort = $request->query('sort', 'relevance');
+
+  //   $category = $this->categoryService->getCategory($slug);
+
+  //   if (!$category) {
+  //     return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
+  //   }
+
+  //   /**
+  //    * -------------------------------------------------
+  //    * STEP 1: Rank products in category (1st, 2nd)
+  //    * -------------------------------------------------
+  //    */
+  //   $productRankSubQuery = DB::table('products')
+  //     ->select(
+  //       'id as product_id',
+  //       DB::raw('ROW_NUMBER() OVER (ORDER BY id) as product_rank')
+  //     )
+  //     ->where('category_id', $category->id);
+
+  //   /**
+  //    * -------------------------------------------------
+  //    * STEP 2: Pick variant based on product rank
+  //    *   - product_rank = 1 → FIRST variant (MIN id)
+  //    *   - product_rank = 2 → LAST variant (MAX id)
+  //    * -------------------------------------------------
+  //    */
+  //   $variantIdSubQuery = DB::table('product_variants as pv')
+  //     ->joinSub($productRankSubQuery, 'pr', function ($join) {
+  //       $join->on('pr.product_id', '=', 'pv.product_id');
+  //     })
+  //     ->where('pv.status', 1)
+  //     ->groupBy('pv.product_id', 'pr.product_rank')
+  //     ->selectRaw("
+  //           CASE
+  //               WHEN pr.product_rank = 1 THEN MIN(pv.id)
+  //               WHEN pr.product_rank = 2 THEN MAX(pv.id)
+  //           END as id
+  //       ");
+
+  //   /**
+  //    * -------------------------------------------------
+  //    * STEP 3: Main query
+  //    * -------------------------------------------------
+  //    */
+  //   $variantQuery = ProductVariant::query()
+  //     ->with([
+  //       'product',
+  //       'product.category',
+  //       'galleries',
+  //       'inventory',
+  //       'variantReviews'
+  //     ])
+  //     ->whereIn('id', $variantIdSubQuery);
+
+  //   /**
+  //    * -------------------------------------------------
+  //    * STEP 4: Sorting
+  //    * -------------------------------------------------
+  //    */
+  //   if ($sort === 'name-asc') {
+
+  //     $variantQuery->orderBy('name', 'asc');
+  //   } elseif ($sort === 'lowest-price') {
+
+  //     $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
+  //   } elseif ($sort === 'highest-price') {
+
+  //     $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
+  //   } elseif ($sort === 'top-rated') {
+
+  //     $variantQuery->leftJoinSub(
+  //       DB::table('product_reviews')
+  //         ->select(
+  //           'variant_id',
+  //           DB::raw('AVG(rating) as avg_rating'),
+  //           DB::raw('COUNT(*) as review_count')
+  //         )
+  //         ->groupBy('variant_id'),
+  //       'rv',
+  //       'rv.variant_id',
+  //       '=',
+  //       'product_variants.id'
+  //     )
+  //       ->select(
+  //         'product_variants.*',
+  //         DB::raw('COALESCE(rv.avg_rating, 0) as avg_rating'),
+  //         DB::raw('COALESCE(rv.review_count, 0) as review_count')
+  //       )
+  //       ->orderByDesc('avg_rating')
+  //       ->orderByDesc('review_count')
+  //       ->orderByDesc('product_variants.created_at');
+  //   } else {
+  //     // relevance / most-recent
+  //     $variantQuery->orderByDesc('product_variants.created_at');
+  //   }
+
+  //   /**
+  //    * -------------------------------------------------
+  //    * STEP 5: Execute
+  //    * -------------------------------------------------
+  //    */
+  //   $productVariants = $variantQuery->get();
+
+  //   $banner = CustomBanner::where('position', 'category_page_banner')->first();
+
+  //   return ApiResponse::success([
+  //     'category'         => CategoryResource::make($category),
+  //     'product_variants' => ProductResource::collection($productVariants),
+  //     'categoryBanner'   => BannerResource::make($banner),
+  //     'applied_sort'     => $sort
+  //   ], __('response.success.fetch', ['item' => 'Category']));
+  // }
+
   public function getCategoryBySlug(Request $request, $slug = null)
   {
     ifApiTokenExists();
 
     $sort = $request->query('sort', 'relevance');
 
-    $category = $this->categoryService->getCategory($slug);
+    $category = null;
 
-    if (!$category) {
-      return ApiResponse::error(__('response.not_found', ['item' => 'Category']), 404);
+    // Get category only if slug is not "all"
+    if ($slug && strtolower($slug) !== 'all') {
+
+      $category = $this->categoryService->getCategory($slug);
+
+      if (!$category) {
+        return ApiResponse::error(
+          __('response.not_found', ['item' => 'Category']),
+          404
+        );
+      }
     }
 
     /**
      * -------------------------------------------------
-     * STEP 1: Rank products in category (1st, 2nd)
+     * STEP 1: Rank products
      * -------------------------------------------------
      */
     $productRankSubQuery = DB::table('products')
       ->select(
         'id as product_id',
         DB::raw('ROW_NUMBER() OVER (ORDER BY id) as product_rank')
-      )
-      ->where('category_id', $category->id);
+      );
+
+    // Filter only when category is selected
+    if ($category) {
+      $productRankSubQuery->where('category_id', $category->id);
+    }
 
     /**
      * -------------------------------------------------
-     * STEP 2: Pick variant based on product rank
-     *   - product_rank = 1 → FIRST variant (MIN id)
-     *   - product_rank = 2 → LAST variant (MAX id)
+     * STEP 2: Pick variants
      * -------------------------------------------------
      */
     $variantIdSubQuery = DB::table('product_variants as pv')
@@ -166,41 +295,47 @@ class CategoryController extends Controller
      * STEP 4: Sorting
      * -------------------------------------------------
      */
-    if ($sort === 'name-asc') {
+    switch ($sort) {
 
-      $variantQuery->orderBy('name', 'asc');
-    } elseif ($sort === 'lowest-price') {
+      case 'name-asc':
+        $variantQuery->orderBy('name', 'asc');
+        break;
 
-      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) asc');
-    } elseif ($sort === 'highest-price') {
+      case 'lowest-price':
+        $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) ASC');
+        break;
 
-      $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) desc');
-    } elseif ($sort === 'top-rated') {
+      case 'highest-price':
+        $variantQuery->orderByRaw('COALESCE(sale_price, regular_price) DESC');
+        break;
 
-      $variantQuery->leftJoinSub(
-        DB::table('product_reviews')
-          ->select(
-            'variant_id',
-            DB::raw('AVG(rating) as avg_rating'),
-            DB::raw('COUNT(*) as review_count')
-          )
-          ->groupBy('variant_id'),
-        'rv',
-        'rv.variant_id',
-        '=',
-        'product_variants.id'
-      )
-        ->select(
-          'product_variants.*',
-          DB::raw('COALESCE(rv.avg_rating, 0) as avg_rating'),
-          DB::raw('COALESCE(rv.review_count, 0) as review_count')
+      case 'top-rated':
+        $variantQuery->leftJoinSub(
+          DB::table('product_reviews')
+            ->select(
+              'variant_id',
+              DB::raw('AVG(rating) as avg_rating'),
+              DB::raw('COUNT(*) as review_count')
+            )
+            ->groupBy('variant_id'),
+          'rv',
+          'rv.variant_id',
+          '=',
+          'product_variants.id'
         )
-        ->orderByDesc('avg_rating')
-        ->orderByDesc('review_count')
-        ->orderByDesc('product_variants.created_at');
-    } else {
-      // relevance / most-recent
-      $variantQuery->orderByDesc('product_variants.created_at');
+          ->select(
+            'product_variants.*',
+            DB::raw('COALESCE(rv.avg_rating,0) as avg_rating'),
+            DB::raw('COALESCE(rv.review_count,0) as review_count')
+          )
+          ->orderByDesc('avg_rating')
+          ->orderByDesc('review_count')
+          ->orderByDesc('product_variants.created_at');
+        break;
+
+      default:
+        $variantQuery->orderByDesc('product_variants.created_at');
+        break;
     }
 
     /**
@@ -213,11 +348,13 @@ class CategoryController extends Controller
     $banner = CustomBanner::where('position', 'category_page_banner')->first();
 
     return ApiResponse::success([
-      'category'         => CategoryResource::make($category),
+      'category'         => $category ? CategoryResource::make($category) : null,
       'product_variants' => ProductResource::collection($productVariants),
       'categoryBanner'   => BannerResource::make($banner),
       'applied_sort'     => $sort
-    ], __('response.success.fetch', ['item' => 'Category']));
+    ], __('response.success.fetch', [
+      'item' => $category ? 'Category' : 'Products'
+    ]));
   }
 
   public function getProducts(Request $request)
