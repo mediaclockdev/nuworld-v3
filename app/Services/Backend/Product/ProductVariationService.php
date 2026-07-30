@@ -149,7 +149,7 @@ class ProductVariationService extends BaseFormService
    */
   public function update(VariationRequestSingle $request, string $id): JsonResponse
   {
-    dd($request->all());
+    //dd($request->all());
     $variant = $this->modelClass::storeSingle($request, $id);
 
     if (!$variant) {
@@ -180,6 +180,7 @@ class ProductVariationService extends BaseFormService
 
         if (str_starts_with($mimeType, 'image')) {
           $upload = $this->imageUploadService->uploadImage($file, $directory, 'images', true);
+          dd($upload);
         } else {
           $subDirectory = str_starts_with($mimeType, 'video') ? 'videos' : 'files';
           $upload = Storage::disk('public')->putFileAs("/uploads/{$directory}/{$subDirectory}", $file, $filename);
