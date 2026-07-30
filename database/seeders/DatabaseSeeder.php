@@ -4,7 +4,7 @@ namespace Database\Seeders;
 
 use Database\Seeders\Fashion\CustomBannerSeeder;
 use Database\Seeders\Fashion\ProductAttributeValueSeeder;
-use Database\Seeders\Sunglasses\ProductCategorySeeder;
+use Database\Seeders\Fashion\ProductCategorySeeder;
 use Database\Seeders\Fashion\ProductSeeder;
 use Database\Seeders\Fashion\ProductVariantImageSeeder;
 use Database\Seeders\Fashion\CmsPageSeeder;
