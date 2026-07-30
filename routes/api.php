@@ -46,6 +46,7 @@ Route::prefix('v1')->group(function () {
   Route::controller(CategoryController::class)->group(function () {
     Route::get('/categories', 'getCategories')->name('categories');
     Route::get('/product-listing/{slug}', 'getCategoryBySlug')->name('category.slug');
+    Route::get('/products', 'getProducts')->name('products');
   });
   // Category routes
 

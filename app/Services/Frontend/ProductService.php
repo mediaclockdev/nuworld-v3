@@ -38,6 +38,40 @@ class ProductService
     return $productVariant;
   }
 
+
+  public function getProducts(?string $gender = null, ?string $subcategoryHash = null)
+  {
+    $query = Product::query()
+      ->with(['category'])
+      ->where('status', 1);
+
+    if ($gender) {
+
+      $parent = ProductCategory::where('slug', $gender)->firstOrFail();
+
+      // All child category ids
+      $categoryIds = ProductCategory::where('parent_id', $parent->id)
+        ->pluck('id')
+        ->toArray();
+
+      // If subcategory selected
+      if ($subcategoryHash) {
+
+        $decoded = Hashids::decode($subcategoryHash);
+
+        if (!empty($decoded)) {
+          $query->where('category_id', $decoded[0]);
+        }
+      } else {
+
+        // All products under male/female
+        $query->whereIn('category_id', $categoryIds);
+      }
+    }
+
+    return $query->latest()->paginate(20);
+  }
+
   public static function getProductVariants($productId = 0): Collection
   {
     return ProductVariant::where('product_id', $productId)

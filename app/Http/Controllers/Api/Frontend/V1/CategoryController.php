@@ -219,4 +219,18 @@ class CategoryController extends Controller
       'applied_sort'     => $sort
     ], __('response.success.fetch', ['item' => 'Category']));
   }
+
+  public function getProducts(Request $request)
+  {
+    ifApiTokenExists();
+
+    $category = $request->category;
+    $subcategoryId = $request->subcategory_id;
+
+    $products = $this->productService->getProducts($category, $subcategoryId);
+
+    return ApiResponse::success([
+      'products' => ProductResource::collection($products),
+    ], __('response.success.fetch', ['item' => 'Products']));
+  }
 }
