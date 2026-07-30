@@ -180,7 +180,7 @@ class ProductVariationService extends BaseFormService
 
         if (str_starts_with($mimeType, 'image')) {
           $upload = $this->imageUploadService->uploadImage($file, $directory, 'images', true);
-          dd($upload);
+          // dd($upload);
         } else {
           $subDirectory = str_starts_with($mimeType, 'video') ? 'videos' : 'files';
           $upload = Storage::disk('public')->putFileAs("/uploads/{$directory}/{$subDirectory}", $file, $filename);
