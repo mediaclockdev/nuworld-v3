@@ -41,30 +41,42 @@ class ProductService
 
   public function getProducts(?string $gender = null, ?string $subcategoryHash = null)
   {
-    $query = Product::query()
-      ->with(['category'])
+    $query = Product::with('category')
       ->where('status', 1);
 
     if ($gender) {
 
       $parent = ProductCategory::where('slug', $gender)->firstOrFail();
 
-      // All child category ids
+      // Get all child and grandchild category IDs
       $categoryIds = ProductCategory::where('parent_id', $parent->id)
-        ->pluck('id')
+        ->with('children')
+        ->get()
+        ->flatMap(function ($category) {
+          return collect([$category->id])
+            ->merge($category->children->pluck('id'));
+        })
+        ->unique()
+        ->values()
         ->toArray();
 
-      // If subcategory selected
       if ($subcategoryHash) {
 
         $decoded = Hashids::decode($subcategoryHash);
 
         if (!empty($decoded)) {
-          $query->where('category_id', $decoded[0]);
+          $subcategoryId = $decoded[0];
+
+          // Include grandchildren of selected subcategory
+          $ids = ProductCategory::where('parent_id', $subcategoryId)
+            ->pluck('id')
+            ->push($subcategoryId)
+            ->toArray();
+
+          $query->whereIn('category_id', $ids);
         }
       } else {
 
-        // All products under male/female
         $query->whereIn('category_id', $categoryIds);
       }
     }
