@@ -149,6 +149,7 @@ class ProductVariationService extends BaseFormService
    */
   public function update(VariationRequestSingle $request, string $id): JsonResponse
   {
+    dd($request->all());
     $variant = $this->modelClass::storeSingle($request, $id);
 
     if (!$variant) {
