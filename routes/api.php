@@ -23,7 +23,7 @@ Route::prefix('v1')->group(function () {
   Route::get('/blog-list', [HomePageController::class, 'blogList'])->name('blog-list');
   Route::get('/limited-time-deal',)->name('limited-time-deal');
   Route::post('/tryon-avatar', [HomePageController::class, 'uploadTryOnAvatar']);
-  Route::get('/tryon-avatars', [HomePageController::class, 'avatarList']);
+  // Route::get('/tryon-avatars', [HomePageController::class, 'avatarList']);
   // Route::get('/tryon-avatars', 'getTryOnAvatars');
   // Route::put('/tryon-avatar/{id}', 'updateTryOnAvatar');
   // Route::delete('/tryon-avatar/{id}', 'deleteTryOnAvatar');
