@@ -22,7 +22,7 @@ class TryOnAvatarResource extends JsonResource
       'image' => [
         'path' => $this->image,
         'url' => $this->image
-          ? asset('storage/' . $this->image)
+          ? asset('public/storage/' . $this->image)
           : null,
       ],
 

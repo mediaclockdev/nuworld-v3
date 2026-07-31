@@ -168,4 +168,30 @@ class HomePageController extends Controller
       );
     }
   }
+
+
+  public function avatarList(): JsonResponse
+  {
+    try {
+
+      $avatars = TryOnAvatar::query()
+        ->where('status', 1)
+        ->orderByDesc('is_default')
+        ->orderBy('name')
+        ->get();
+
+      return ApiResponse::success(
+        TryOnAvatarResource::collection($avatars),
+        __('response.success.fetch', [
+          'item' => 'Try-On Avatars',
+        ])
+      );
+    } catch (\Throwable $e) {
+
+      return ApiResponse::error(
+        $e->getMessage(),
+        400
+      );
+    }
+  }
 }
