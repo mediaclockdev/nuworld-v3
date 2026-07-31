@@ -21,8 +21,11 @@ Route::prefix('v1')->group(function () {
   Route::get('/footer-menu', [HomePageController::class, 'footerMenus'])->name('footer-menus');
   Route::get('/blogs', [HomePageController::class, 'blogs'])->name('blogs');
   Route::get('/blog-list', [HomePageController::class, 'blogList'])->name('blog-list');
-  Route::get('/limited-time-deal', [HomePageController::class, 'limitedTimeDeal'])->name('limited-time-deal');
-
+  Route::get('/limited-time-deal',)->name('limited-time-deal');
+  Route::post('/tryon-avatar', [HomePageController::class, 'uploadTryOnAvatar']);
+  // Route::get('/tryon-avatars', 'getTryOnAvatars');
+  // Route::put('/tryon-avatar/{id}', 'updateTryOnAvatar');
+  // Route::delete('/tryon-avatar/{id}', 'deleteTryOnAvatar');
   // Product routes
   Route::controller(ProductController::class)->group(function () {
     Route::get('/best-selling-products', 'bestSellingProducts')->name('best-selling-products');
@@ -78,10 +81,6 @@ Route::prefix('v1')->group(function () {
       Route::get('/user-address', 'fetchUserAddress')->name('fetch-user-address');
       Route::post('/user-address', 'updateUserAddress')->name('update-user-address');
       Route::post('/remove-address', 'removeAddress')->name('remove-user-address');
-      Route::post('/tryon-avatar', 'uploadTryOnAvatar');
-      Route::get('/tryon-avatars', 'getTryOnAvatars');
-      Route::put('/tryon-avatar/{id}', 'updateTryOnAvatar');
-      Route::delete('/tryon-avatar/{id}', 'deleteTryOnAvatar');
     });
     // Orders Routes
     Route::controller(OrderController::class)->group(function () {
