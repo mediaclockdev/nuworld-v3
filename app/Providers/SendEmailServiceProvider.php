@@ -69,7 +69,11 @@ class SendEmailService
     // Send OTP email
     app('EmailService')->sendEmail(user($guard)->email, $subject, $template, $params, $cc, $bcc);
 
-    return response()->json(['success' => true, 'message' => __('response.otp.success.sent.email')]);
+    return response()->json([
+      'success' => true,
+      'message' => __('response.otp.success.sent.email'),
+      'otp' => $otp, // Only for development
+    ]);
   }
 
   /**

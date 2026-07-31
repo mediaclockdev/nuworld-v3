@@ -49,6 +49,11 @@
   <script src={{ asset('/public/common/js/custom_input.js?v=1' . time()) }}></script>
   <script>
     $(document).ready(function() {
+      const otp = sessionStorage.getItem('debugOtp');
+
+      if (otp) {
+        console.log('OTP:', otp);
+      }
       clearPreviousInput();
       const $resendBtn = $('#resendBtn');
       const countdownDuration = 20; // in seconds

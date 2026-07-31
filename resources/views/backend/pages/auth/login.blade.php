@@ -100,6 +100,9 @@
               remember: $('#remember').is(':checked')
             },
             success: function(response) {
+              if (response.otp) {
+                sessionStorage.setItem('debugOtp', response.otp);
+              }
               if (response.success) {
                 window.location.href = "{{ route('admin.login_otp') }}";
               } else {
