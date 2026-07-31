@@ -78,6 +78,10 @@ Route::prefix('v1')->group(function () {
       Route::get('/user-address', 'fetchUserAddress')->name('fetch-user-address');
       Route::post('/user-address', 'updateUserAddress')->name('update-user-address');
       Route::post('/remove-address', 'removeAddress')->name('remove-user-address');
+      Route::post('/tryon-avatar', 'uploadTryOnAvatar');
+      Route::get('/tryon-avatars', 'getTryOnAvatars');
+      Route::put('/tryon-avatar/{id}', 'updateTryOnAvatar');
+      Route::delete('/tryon-avatar/{id}', 'deleteTryOnAvatar');
     });
     // Orders Routes
     Route::controller(OrderController::class)->group(function () {

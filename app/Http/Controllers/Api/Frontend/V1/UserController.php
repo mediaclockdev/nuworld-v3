@@ -10,9 +10,11 @@ use App\Services\Frontend\UserProfile;
 use App\Http\Resources\Api\Frontend\AddressResource;
 use App\Http\Resources\Api\Frontend\StatesResource;
 use App\Http\Resources\Api\Frontend\UserProfileResource;
+use App\Http\Resources\Api\Frontend\TryOnAvatarResource;
 use App\Models\Address;
 use App\Models\Country;
 use App\Models\State;
+use App\Models\TryOnAvatar;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -332,6 +334,63 @@ class UserController extends Controller
       __('response.error.delete', ['item' => 'User Address']),
       400
     );
+  }
+
+  public function uploadTryOnAvatar(Request $request): JsonResponse
+  {
+    $request->validate([
+      'name' => ['required', 'string', 'max:150'],
+      'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:4096'],
+      'supported_regions' => ['nullable', 'array'],
+      'is_default' => ['nullable', 'boolean'],
+    ]);
+
+    try {
+
+      if ($request->boolean('is_default')) {
+        TryOnAvatar::where('is_default', true)->update([
+          'is_default' => false,
+        ]);
+      }
+
+      $file = $request->file('image');
+
+      $fileName = uniqid() . '.' . $file->getClientOriginalExtension();
+
+      Storage::disk('public')->putFileAs(
+        'tryon/avatars',
+        $file,
+        $fileName
+      );
+
+      $avatar = TryOnAvatar::create([
+        'name' => $request->name,
+        'image' => 'tryon/avatars/' . $fileName,
+        'supported_regions' => $request->supported_regions,
+        'is_default' => $request->boolean('is_default'),
+        'status' => $request->has('status')
+          ? $request->boolean('status')
+          : true,
+        'created_by' => 1,
+      ]);
+
+      return ApiResponse::success(
+        new TryOnAvatarResource($avatar),
+        __('response.success.create', [
+          'item' => 'Try-On Avatar',
+        ])
+      );
+    } catch (\Throwable $e) {
+
+      if (isset($fileName)) {
+        Storage::disk('public')->delete('tryon/avatars/' . $fileName);
+      }
+
+      return ApiResponse::error(
+        $e->getMessage(),
+        400
+      );
+    }
   }
 
   // public function dashboardOverview(Request $request)
