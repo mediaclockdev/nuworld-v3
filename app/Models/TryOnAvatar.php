@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TryOnAvatar extends Model
 {
   use SoftDeletes;
+  protected $table = 'tryon_avatars';
 
   protected $fillable = [
     'name',
