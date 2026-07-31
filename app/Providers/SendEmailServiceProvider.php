@@ -80,20 +80,21 @@ class SendEmailService
   {
     try {
       $guard = ($userType === 'admin') ? 'admin' : 'web';
+
       $user = user($guard);
 
       $otp = Verification::insertOTP($userType, 'email', $user->id);
 
       return response()->json([
         'success' => true,
-        'otp' => $otp,
+        'message' => 'OTP generated successfully.',
+        'otp' => $otp
       ]);
-    } catch (\Exception $e) {
+    } catch (\Throwable $e) {
+
       return response()->json([
         'success' => false,
-        'error' => $e->getMessage(),
-        'line' => $e->getLine(),
-        'file' => $e->getFile(),
+        'message' => $e->getMessage()
       ], 500);
     }
   }

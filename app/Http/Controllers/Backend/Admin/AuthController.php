@@ -44,53 +44,125 @@ class AuthController extends Controller
    * @param LoginRequest $request
    * @return JsonResponse
    */
+  // public function validateLogin(LoginRequest $request): JsonResponse
+  // {
+
+  //   //Check if 2FA Authentication
+  //   $siteSettings      = SiteSetting::pluck('value', 'key')->toArray();
+  //   $twoFactorAuth     = $siteSettings['two_factor_auth'] ?? null;
+  //   $requiresTwoFactor = match ($twoFactorAuth) {
+  //     '1' => true,                      // Force enable 2FA
+  //     '2' => false,                     // Force disable 2FA
+  //     default => config('app.two_factor_auth_admin'), // Use config
+  //   };
+
+  //   if (!Admin::accountActive($request->email))
+  //     return response()->json(['success' => false, 'message' => __('response.auth.suspended')]);
+
+  //   if (!$request->authenticate())
+  //     return response()->json(['success' => false, 'message' => __('response.auth.failed')]);
+
+  //   if (!$requiresTwoFactor) {
+  //     $logID = AdminActivity::insertAgentActivity($this->getUserAgent($request));
+  //     session(['verified' => true, 'logID' => $logID]);
+  //     return response()->json(['success' => true, 'message' => trans('response.auth.success'), 'otp' => false]);
+  //   }
+
+  //   try {
+  //     $response = app('SendEmailService')->OTP('admin', 'login')->getData();
+  //   } catch (\Throwable $e) {
+  //     // \Log::error($e->getMessage());
+  //     // \Log::error($e->getTraceAsString());
+
+  //     return response()->json([
+  //       'success' => false,
+  //       'message' => $e->getMessage()
+  //     ], 500);
+  //   }
+
+  //   if ($response->success) {
+
+  //     if ($request->remember === "true")
+  //       session()->put('ecomm_email', $request->email);
+  //     else
+  //       session()->put('ecomm_email');
+
+  //     return response()->json(['success' => true, 'message' => $response->message]);
+  //   }
+
+  //   return response()->json(['success' => false, 'message' => $response->message]);
+  // }
+
   public function validateLogin(LoginRequest $request): JsonResponse
   {
+    // Check if 2FA Authentication
+    $siteSettings = SiteSetting::pluck('value', 'key')->toArray();
+    $twoFactorAuth = $siteSettings['two_factor_auth'] ?? null;
 
-    //Check if 2FA Authentication
-    $siteSettings      = SiteSetting::pluck('value', 'key')->toArray();
-    $twoFactorAuth     = $siteSettings['two_factor_auth'] ?? null;
     $requiresTwoFactor = match ($twoFactorAuth) {
-      '1' => true,                      // Force enable 2FA
-      '2' => false,                     // Force disable 2FA
-      default => config('app.two_factor_auth_admin'), // Use config
+      '1' => true,
+      '2' => false,
+      default => config('app.two_factor_auth_admin'),
     };
 
-    if (!Admin::accountActive($request->email))
-      return response()->json(['success' => false, 'message' => __('response.auth.suspended')]);
+    if (!Admin::accountActive($request->email)) {
+      return response()->json([
+        'success' => false,
+        'message' => __('response.auth.suspended')
+      ]);
+    }
 
-    if (!$request->authenticate())
-      return response()->json(['success' => false, 'message' => __('response.auth.failed')]);
+    if (!$request->authenticate()) {
+      return response()->json([
+        'success' => false,
+        'message' => __('response.auth.failed')
+      ]);
+    }
 
+    // No OTP required
     if (!$requiresTwoFactor) {
       $logID = AdminActivity::insertAgentActivity($this->getUserAgent($request));
-      session(['verified' => true, 'logID' => $logID]);
-      return response()->json(['success' => true, 'message' => trans('response.auth.success'), 'otp' => false]);
+
+      session([
+        'verified' => true,
+        'logID' => $logID
+      ]);
+
+      return response()->json([
+        'success' => true,
+        'message' => trans('response.auth.success'),
+        'otp' => false
+      ]);
     }
 
     try {
       $response = app('SendEmailService')->OTP('admin', 'login')->getData();
+
+      if (!$response->success) {
+        return response()->json([
+          'success' => false,
+          'message' => $response->error ?? 'Failed to generate OTP.'
+        ]);
+      }
+
+      if ($request->remember === "true") {
+        session()->put('ecomm_email', $request->email);
+      } else {
+        session()->forget('ecomm_email');
+      }
+
+      return response()->json([
+        'success' => true,
+        'message' => 'OTP generated successfully.',
+        'otp' => $response->otp // For development only
+      ]);
     } catch (\Throwable $e) {
-      // \Log::error($e->getMessage());
-      // \Log::error($e->getTraceAsString());
 
       return response()->json([
         'success' => false,
         'message' => $e->getMessage()
       ], 500);
     }
-
-    if ($response->success) {
-
-      if ($request->remember === "true")
-        session()->put('ecomm_email', $request->email);
-      else
-        session()->put('ecomm_email');
-
-      return response()->json(['success' => true, 'message' => $response->message]);
-    }
-
-    return response()->json(['success' => false, 'message' => $response->message]);
   }
 
   /**
