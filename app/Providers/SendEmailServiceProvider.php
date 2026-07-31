@@ -45,35 +45,57 @@ class SendEmailService
    *
    * @return JsonResponse
    */
+  // public function OTP(string $userType = 'user', $otpType = 'login'): JsonResponse
+  // {
+  //   $guard = ($userType === 'admin') ? 'admin' : 'web';
+  //   $user = user($guard);
+
+  //   $subject = 'Your OTP Code for ' . ($otpType === 'login' ? 'Login' : '');
+
+  //   $template = 'emails.otp';
+
+  //   $otp = Verification::insertOTP($userType, 'email', $user->id);
+
+  //   $fullName = rtrim($user->first_name . ' ' . $user->middle_name . ' ' . $user->last_name);
+
+  //   $params = [
+  //     'name' => $fullName,
+  //     'otp' => $otp
+  //   ];
+
+  //   $cc = [];
+  //   $bcc = [];
+
+  //   // Send OTP email
+  //   //app('EmailService')->sendEmail(user($guard)->email, $subject, $template, $params, $cc, $bcc);
+
+  //   return response()->json([
+  //     'success' => true,
+  //     'message' => __('response.otp.success.sent.email'),
+  //     'otp' => $otp, // Only for development
+  //   ]);
+  // }
+
   public function OTP(string $userType = 'user', $otpType = 'login'): JsonResponse
   {
-    $guard = ($userType === 'admin') ? 'admin' : 'web';
-    $user = user($guard);
+    try {
+      $guard = ($userType === 'admin') ? 'admin' : 'web';
+      $user = user($guard);
 
-    $subject = 'Your OTP Code for ' . ($otpType === 'login' ? 'Login' : '');
+      $otp = Verification::insertOTP($userType, 'email', $user->id);
 
-    $template = 'emails.otp';
-
-    $otp = Verification::insertOTP($userType, 'email', $user->id);
-
-    $fullName = rtrim($user->first_name . ' ' . $user->middle_name . ' ' . $user->last_name);
-
-    $params = [
-      'name' => $fullName,
-      'otp' => $otp
-    ];
-
-    $cc = [];
-    $bcc = [];
-
-    // Send OTP email
-    //app('EmailService')->sendEmail(user($guard)->email, $subject, $template, $params, $cc, $bcc);
-
-    return response()->json([
-      'success' => true,
-      'message' => __('response.otp.success.sent.email'),
-      'otp' => $otp, // Only for development
-    ]);
+      return response()->json([
+        'success' => true,
+        'otp' => $otp,
+      ]);
+    } catch (\Exception $e) {
+      return response()->json([
+        'success' => false,
+        'error' => $e->getMessage(),
+        'line' => $e->getLine(),
+        'file' => $e->getFile(),
+      ], 500);
+    }
   }
 
   /**
