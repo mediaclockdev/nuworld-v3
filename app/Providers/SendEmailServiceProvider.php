@@ -67,7 +67,7 @@ class SendEmailService
     $bcc = [];
 
     // Send OTP email
-    app('EmailService')->sendEmail(user($guard)->email, $subject, $template, $params, $cc, $bcc);
+    //app('EmailService')->sendEmail(user($guard)->email, $subject, $template, $params, $cc, $bcc);
 
     return response()->json([
       'success' => true,
