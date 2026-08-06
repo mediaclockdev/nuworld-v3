@@ -6,15 +6,18 @@ use App\Http\Controllers\Controller;
 use App\Helpers\ApiResponse;
 use App\Http\Requests\ApiAddressRequest;
 use App\Http\Requests\Frontend\UpdateProfileRequest;
+use App\Http\Requests\Frontend\UploadPortraitRequest;
 use App\Services\Frontend\UserProfile;
 use App\Http\Resources\Api\Frontend\AddressResource;
 use App\Http\Resources\Api\Frontend\StatesResource;
 use App\Http\Resources\Api\Frontend\UserProfileResource;
 use App\Http\Resources\Api\Frontend\TryOnAvatarResource;
+use App\Http\Resources\Api\Frontend\UserPortraitResource;
 use App\Models\Address;
 use App\Models\Country;
 use App\Models\State;
 use App\Models\TryOnAvatar;
+use App\Models\UserPortrait;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -384,6 +387,77 @@ class UserController extends Controller
 
       if (isset($fileName)) {
         Storage::disk('public')->delete('tryon/avatars/' . $fileName);
+      }
+
+      return ApiResponse::error(
+        $e->getMessage(),
+        400
+      );
+    }
+  }
+
+  public function uploadPortrait(UploadPortraitRequest $request): JsonResponse
+  {
+    try {
+
+      $file = $request->file('image');
+
+      $extension = strtolower($file->getClientOriginalExtension());
+
+      $fileName = uniqid() . '.' . $extension;
+
+      $directory = 'tryon/portraits';
+
+      Storage::disk('public')->putFileAs(
+        $directory,
+        $file,
+        $fileName
+      );
+
+      [$width, $height] = getimagesize($file->getRealPath());
+
+      $portrait = UserPortrait::create([
+
+        'user_id' => Auth::check() ? Auth::id() : null,
+
+        'gender' => $request->gender,
+
+        'image' => $directory . '/' . $fileName,
+
+        'thumbnail' => null,
+
+        'width' => $width,
+
+        'height' => $height,
+
+        'aspect_ratio' => round($width / $height, 4),
+
+        'status' => 1,
+
+        'created_by' => null,
+
+        'updated_by' => null,
+
+        'deleted_by' => null,
+
+      ]);
+
+      return ApiResponse::success(
+
+        new UserPortraitResource($portrait),
+
+        __('response.success.create', [
+          'item' => 'Portrait'
+        ])
+
+      );
+    } catch (\Throwable $e) {
+
+      if (isset($fileName)) {
+
+        Storage::disk('public')->delete(
+          'tryon/portraits/' . $fileName
+        );
       }
 
       return ApiResponse::error(

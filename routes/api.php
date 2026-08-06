@@ -82,6 +82,7 @@ Route::prefix('v1')->group(function () {
       Route::get('/user-address', 'fetchUserAddress')->name('fetch-user-address');
       Route::post('/user-address', 'updateUserAddress')->name('update-user-address');
       Route::post('/remove-address', 'removeAddress')->name('remove-user-address');
+      Route::post('/upload-portrait', 'uploadPortrait')->name('upload.portrait');
     });
     // Orders Routes
     Route::controller(OrderController::class)->group(function () {
