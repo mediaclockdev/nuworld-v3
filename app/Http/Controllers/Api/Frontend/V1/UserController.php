@@ -493,6 +493,8 @@ class UserController extends Controller
   ): JsonResponse {
     try {
 
+      ifApiTokenExists();
+
       $file = $request->file('image');
 
       /*
