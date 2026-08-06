@@ -12,7 +12,8 @@ class UserPortrait extends Model
   protected $fillable = [
     'user_id',
     'gender',
-    'image',
+    'original_image',
+    'processed_image',
     'thumbnail',
     'width',
     'height',

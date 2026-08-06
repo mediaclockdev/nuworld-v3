@@ -26,10 +26,27 @@ use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Services\PortraitValidator;
+use App\Services\BackgroundRemovalService;
+
+
 
 
 class UserController extends Controller
 {
+
+  /**
+   * Background Removal Service
+   */
+  protected BackgroundRemovalService $backgroundRemovalService;
+
+  /**
+   * Constructor
+   */
+  public function __construct(
+    BackgroundRemovalService $backgroundRemovalService
+  ) {
+    $this->backgroundRemovalService = $backgroundRemovalService;
+  }
 
   public function fetchUserData(): JsonResponse
   {
@@ -396,17 +413,131 @@ class UserController extends Controller
     }
   }
 
-  public function uploadPortrait(UploadPortraitRequest $request): JsonResponse
-  {
+  // public function uploadPortrait(UploadPortraitRequest $request): JsonResponse
+  // {
+  //   try {
+
+  //     $file = $request->file('image');
+
+  //     $extension = strtolower($file->getClientOriginalExtension());
+
+  //     $fileName = uniqid() . '.' . $extension;
+
+  //     $directory = 'tryon/portraits';
+
+  //     Storage::disk('public')->putFileAs(
+  //       $directory,
+  //       $file,
+  //       $fileName
+  //     );
+
+  //     [$width, $height] = getimagesize($file->getRealPath());
+
+  //     $portrait = UserPortrait::create([
+
+  //       'user_id' => Auth::check() ? Auth::id() : null,
+
+  //       'gender' => $request->gender,
+
+  //       'image' => $directory . '/' . $fileName,
+
+  //       'thumbnail' => null,
+
+  //       'width' => $width,
+
+  //       'height' => $height,
+
+  //       'aspect_ratio' => round($width / $height, 4),
+
+  //       'status' => 1,
+
+  //       'created_by' => null,
+
+  //       'updated_by' => null,
+
+  //       'deleted_by' => null,
+
+  //     ]);
+
+  //     return ApiResponse::success(
+
+  //       new UserPortraitResource($portrait),
+
+  //       __('response.success.create', [
+  //         'item' => 'Portrait'
+  //       ])
+
+  //     );
+  //   } catch (\Throwable $e) {
+
+  //     if (isset($fileName)) {
+
+  //       Storage::disk('public')->delete(
+  //         'tryon/portraits/' . $fileName
+  //       );
+  //     }
+
+  //     return ApiResponse::error(
+  //       $e->getMessage(),
+  //       400
+  //     );
+  //   }
+  // }
+
+
+
+
+  public function uploadPortrait(
+    UploadPortraitRequest $request,
+    BackgroundRemovalService $backgroundRemovalService
+  ): JsonResponse {
     try {
 
       $file = $request->file('image');
 
+      /*
+        |--------------------------------------------------------------------------
+        | Validate uploaded image
+        |--------------------------------------------------------------------------
+        */
+
+      if (!$file->isValid()) {
+
+        return ApiResponse::error(
+          'Invalid portrait image.',
+          422
+        );
+      }
+
+      /*
+        |--------------------------------------------------------------------------
+        | Image Information
+        |--------------------------------------------------------------------------
+        */
+
+      [$width, $height] = getimagesize($file->getRealPath());
+
+      if ($width < 512 || $height < 512) {
+
+        return ApiResponse::error(
+          'Please upload a portrait image with minimum resolution of 512x512.',
+          422
+        );
+      }
+
+      $aspectRatio = round($width / $height, 4);
+
+      /*
+        |--------------------------------------------------------------------------
+        | Store Original Image
+        |--------------------------------------------------------------------------
+        */
+
       $extension = strtolower($file->getClientOriginalExtension());
 
-      $fileName = uniqid() . '.' . $extension;
+      $fileName = uniqid('portrait_') . '.' . $extension;
 
-      $directory = 'tryon/portraits';
+      $directory = 'tryon/portraits/original';
 
       Storage::disk('public')->putFileAs(
         $directory,
@@ -414,7 +545,31 @@ class UserController extends Controller
         $fileName
       );
 
-      [$width, $height] = getimagesize($file->getRealPath());
+      $originalImage = $directory . '/' . $fileName;
+
+      /*
+        |--------------------------------------------------------------------------
+        | Remove Background
+        |--------------------------------------------------------------------------
+        */
+
+      $background = $backgroundRemovalService->remove($originalImage);
+
+      if (!$background['success']) {
+
+        Storage::disk('public')->delete($originalImage);
+
+        return ApiResponse::error(
+          $background['message'] ?? 'Background removal failed.',
+          422
+        );
+      }
+
+      /*
+        |--------------------------------------------------------------------------
+        | Save Portrait
+        |--------------------------------------------------------------------------
+        */
 
       $portrait = UserPortrait::create([
 
@@ -422,7 +577,9 @@ class UserController extends Controller
 
         'gender' => $request->gender,
 
-        'image' => $directory . '/' . $fileName,
+        'original_image' => $originalImage,
+
+        'processed_image' => $background['processed_image'],
 
         'thumbnail' => null,
 
@@ -430,7 +587,7 @@ class UserController extends Controller
 
         'height' => $height,
 
-        'aspect_ratio' => round($width / $height, 4),
+        'aspect_ratio' => $aspectRatio,
 
         'status' => 1,
 
@@ -453,16 +610,21 @@ class UserController extends Controller
       );
     } catch (\Throwable $e) {
 
-      if (isset($fileName)) {
+      if (isset($originalImage)) {
+
+        Storage::disk('public')->delete($originalImage);
+      }
+
+      if (isset($background['processed_image'])) {
 
         Storage::disk('public')->delete(
-          'tryon/portraits/' . $fileName
+          $background['processed_image']
         );
       }
 
       return ApiResponse::error(
         $e->getMessage(),
-        400
+        500
       );
     }
   }

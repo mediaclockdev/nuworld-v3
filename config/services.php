@@ -40,6 +40,17 @@ return [
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect'      => env('GOOGLE_REDIRECT_URI'),
   ],
+  'removebg' => [
+
+    'api_key' => env('REMOVE_BG_API_KEY'),
+
+    'endpoint' => env('REMOVE_BG_ENDPOINT'),
+
+    'size' => env('REMOVE_BG_SIZE', 'auto'),
+
+    'format' => env('REMOVE_BG_FORMAT', 'png'),
+
+  ],
   'huggingface' => [
     'api_key' => env('HUGGINGFACE_API_KEY'),
   ],
