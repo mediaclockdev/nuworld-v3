@@ -87,7 +87,7 @@ if (!function_exists('siteLogo')) {
     }
     $logo = SiteSetting::where('key', 'site_logo')->value('value');
     // return $logo ? url('public/storage/uploads/site/logo/' . $logo) : asset('public/backend/assetss/images/logo-dark.png');
-    return $logo ? url('public/frontend/assets/img/New_World.webp') : asset('public/frontend/assets/img/New_World.webp');
+    return $logo ? url('public/frontend/assets/img/New_World2.png') : asset('public/frontend/assets/img/New_World2.png');
   }
 }
 
