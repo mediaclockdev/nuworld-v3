@@ -219,6 +219,7 @@ class ProductController extends Controller
 
 
 
+
   public function getProductVariants($productID)
   {
     ifApiTokenExists();
