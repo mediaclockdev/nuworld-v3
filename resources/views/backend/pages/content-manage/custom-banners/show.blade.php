@@ -52,7 +52,7 @@
       ($key === 'category_page_headline_banner' && $customBanners->count() > 0) ||
       ($key === 'app_splash_logo' && $customBanners->count() > 0) ||
       ($key === 'app_journey_screen' && $customBanners->count() > 0) ||
-      ($key === 'app_home_landing_inner_banner' && $customBanners->count() > 2) ||
+      ($key === 'app_home_landing_inner_banner' && $customBanners->count() > 0) ||
       ($key === 'home_page_top_category_banner' && $customBanners->count() > 0) ||
       ($key === 'blog_page_banner' && $customBanners->count() > 0) ||
       ($key === 'mega_menu_banner' && $customBanners->count() > 6) ||

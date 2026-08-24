@@ -210,6 +210,7 @@ return [
     'hyper_link' => true,
     'banner_type' => 'app',
   ],
+  
   'home_page_top_category_banner' => [
     'display_name' => 'Home Page Top Category Banner',
     'options' => true,
