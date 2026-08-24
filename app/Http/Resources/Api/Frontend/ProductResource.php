@@ -19,7 +19,7 @@ class ProductResource extends JsonResource
     $salePrice = findSalePrice($this->id);
     $isDiscounted = !$salePrice['regular_price_true'];
     //$averageRating = $this->variantReviews()->avg('rating');
-    $averageRating = $this->resource->variantReviews()->avg('rating');
+    $averageRating = $this->variantReviews()->avg('rating');
     $attributes = $this->attribute_details ?? [];
 
     return [
@@ -45,7 +45,7 @@ class ProductResource extends JsonResource
       'is_in_wishlist' => isInCart($this->id, true),
       'avg_rating' => $averageRating !== null ? round((float) $averageRating, 1) : 0.0,
       // 'total_rating' => $this->variantReviews()->count(),
-      'total_rating' => $this->resource->variantReviews()->count(),
+      'total_rating' => $this->variantReviews()->count(),
       // 'reviews' => $this->variantReviews() ?? [],
     ];
   }
