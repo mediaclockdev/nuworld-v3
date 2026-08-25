@@ -33,7 +33,7 @@ class DatabaseSeeder extends Seeder
       SiteSettingsSeeder::class,
       MenuSeeder::class,
       ProductCategorySeeder::class,
-      // ProductAttributeValueSeeder::class,
+      ProductAttributeValueSeeder::class,
       // ProductSeeder::class,
       // ProductVariantImageSeeder::class,
       CustomBannerSeeder::class,
