@@ -64,12 +64,12 @@ class BannerService
     $validated = $request->validate($rules, $messages);
 
     $settings = $this->prepareSettings($request, $validated, $bannerConfig);
-    dd([
-      'banner_config' => $bannerConfig,
-      'validated' => $validated,
-      'settings' => $settings,
-      'image_setting' => $settings['image'] ?? 'IMAGE KEY MISSING',
-    ]);
+    // dd([
+    //   'banner_config' => $bannerConfig,
+    //   'validated' => $validated,
+    //   'settings' => $settings,
+    //   'image_setting' => $settings['image'] ?? 'IMAGE KEY MISSING',
+    // ]);
 
     // Save category IDs from select2
     if ($request->has('option')) {
@@ -194,6 +194,14 @@ class BannerService
 
       if ($field === 'image') {
         if ($request->hasFile('image')) {
+          $imagePath = $image->store('uploads/banners', 'public');
+
+          dd([
+            'image_path' => $imagePath,
+            'basename' => basename($imagePath),
+            'disk_exists' => \Storage::disk('public')->exists($imagePath),
+            'disk_path' => \Storage::disk('public')->path($imagePath),
+          ]);
           $image = $request->file('image');
           $imagePath = $image->store('uploads/banners', 'public');
           $settings[$field] = basename($imagePath);
