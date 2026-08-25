@@ -194,7 +194,10 @@ class BannerService
 
       if ($field === 'image') {
         if ($request->hasFile('image')) {
+
+          $image = $request->file('image');
           $imagePath = $image->store('uploads/banners', 'public');
+          //$imagePath = $image->store('uploads/banners', 'public');
 
           dd([
             'image_path' => $imagePath,
@@ -202,8 +205,6 @@ class BannerService
             'disk_exists' => \Storage::disk('public')->exists($imagePath),
             'disk_path' => \Storage::disk('public')->path($imagePath),
           ]);
-          $image = $request->file('image');
-          $imagePath = $image->store('uploads/banners', 'public');
           $settings[$field] = basename($imagePath);
         } else {
           if ($request->id) {
