@@ -200,12 +200,12 @@ class BannerService
           $imagePath = $image->store('uploads/banners', 'public');
           //$imagePath = $image->store('uploads/banners', 'public');
 
-          dd([
-            'image_path' => $imagePath,
-            'basename' => basename($imagePath),
-            'disk_exists' => Storage::disk('public')->exists($imagePath),
-            'disk_path' => Storage::disk('public')->path($imagePath),
-          ]);
+          // dd([
+          //   'image_path' => $imagePath,
+          //   'basename' => basename($imagePath),
+          //   'disk_exists' => Storage::disk('public')->exists($imagePath),
+          //   'disk_path' => Storage::disk('public')->path($imagePath),
+          // ]);
           $settings[$field] = basename($imagePath);
         } else {
           if ($request->id) {
