@@ -37,6 +37,14 @@ class BannerService
   public function storeBanner(Request $request)
   {
     //pd($request->all());
+    dd([
+      'all' => $request->all(),
+      'has_image' => $request->hasFile('image'),
+      'image' => $request->file('image'),
+      'image_name' => $request->file('image')?->getClientOriginalName(),
+      'image_mime' => $request->file('image')?->getMimeType(),
+      'image_size' => $request->file('image')?->getSize(),
+    ]);
     $position = $request->input('position');
     $bannerConfig = config("banner.$position");
 
@@ -218,7 +226,6 @@ class BannerService
             $settings[$field] = $existing ? (json_decode($existing->settings, true)[$field] ?? null) : null;
           } else {
             $settings[$field] = null;
-            
           }
         }
       } elseif ($field !== 'title') {
