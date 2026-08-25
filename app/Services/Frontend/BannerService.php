@@ -37,14 +37,14 @@ class BannerService
   public function storeBanner(Request $request)
   {
     //pd($request->all());
-    dd([
-      'all' => $request->all(),
-      'has_image' => $request->hasFile('image'),
-      'image' => $request->file('image'),
-      'image_name' => $request->file('image')?->getClientOriginalName(),
-      'image_mime' => $request->file('image')?->getMimeType(),
-      'image_size' => $request->file('image')?->getSize(),
-    ]);
+    // dd([
+    //   'all' => $request->all(),
+    //   'has_image' => $request->hasFile('image'),
+    //   'image' => $request->file('image'),
+    //   'image_name' => $request->file('image')?->getClientOriginalName(),
+    //   'image_mime' => $request->file('image')?->getMimeType(),
+    //   'image_size' => $request->file('image')?->getSize(),
+    // ]);
     $position = $request->input('position');
     $bannerConfig = config("banner.$position");
 
@@ -64,6 +64,12 @@ class BannerService
     $validated = $request->validate($rules, $messages);
 
     $settings = $this->prepareSettings($request, $validated, $bannerConfig);
+    dd([
+      'banner_config' => $bannerConfig,
+      'validated' => $validated,
+      'settings' => $settings,
+      'image_setting' => $settings['image'] ?? 'IMAGE KEY MISSING',
+    ]);
 
     // Save category IDs from select2
     if ($request->has('option')) {
