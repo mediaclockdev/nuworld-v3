@@ -5,6 +5,7 @@ namespace App\Services\Frontend;
 
 use App\Models\CustomBanner;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Vinkla\Hashids\Facades\Hashids;
 
 class BannerService
@@ -202,8 +203,8 @@ class BannerService
           dd([
             'image_path' => $imagePath,
             'basename' => basename($imagePath),
-            'disk_exists' => \Storage::disk('public')->exists($imagePath),
-            'disk_path' => \Storage::disk('public')->path($imagePath),
+            'disk_exists' => Storage::disk('public')->exists($imagePath),
+            'disk_path' => Storage::disk('public')->path($imagePath),
           ]);
           $settings[$field] = basename($imagePath);
         } else {
