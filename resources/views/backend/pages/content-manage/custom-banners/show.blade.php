@@ -110,30 +110,7 @@
         <input type="hidden" name="position" value="{{ $key }}">
         <input type="hidden" name="id" id="bannerId">
         <input type="hidden" name="custom_order" id="customOrderInput">
-        @if ($key === 'book_collection_banner')
-          <div class="col-md-12 mt-4">
-            <label><strong>Upload Image & Add Hotspots (Product SKUs)</strong></label>
 
-            {{-- Image input --}}
-            <input type="file" name="coordinates_image" id="bannerImageInput_book_collection_banner" accept="image/*"
-              class="form-control mb-3">
-
-            {{-- Image + hotspot container --}}
-            <div class="hotspot-editor border rounded position-relative d-inline-block" style="display:none;">
-              <img id="bannerImagePreview" src="{{ !empty($banner->image) ? asset('storage/' . $banner->image) : '' }}"
-                alt="Banner Preview" class="img-fluid" style="cursor: crosshair; max-width: 100%; height: auto;">
-              <div id="hotspotContainer"></div>
-            </div>
-
-            {{-- <input type="hidden" name="options[hotspots]" id="hotspotData"> --}}
-            <input type="hidden" name="coordinates[hotspots]" id="hotspotData" value='@json($banner->settings['coordinates']['hotspots'] ?? [])'>
-
-            <p class="text-muted mt-2">
-              Click anywhere on the image to add a Product SKU hotspot.<br>
-              Right-click on a point to remove it.
-            </p>
-          </div>
-        @endif
 
 
 
@@ -189,7 +166,6 @@
                 'app_journey_screen' => ['btn_text', 'btn_color', 'skip_btn_text', 'skip_btn_color'],
                 'app_splash_logo' => ['bg_color'],
                 'home_page_top_category_banner' => ['option'],
-                'book_collection_banner' => ['sub_title'],
                 'shop_details_page_banner' => ['single_option'],
                 'mega_menu_banner' => ['single_option'],
                 // 'category_page_headline_banner' => ['content'],
@@ -302,15 +278,13 @@
                   <input type="hidden" name="hover_image_existing" id="hoverImageExistingInput">
 
                   <div id="hoverImagePreviewWrapper" class="mt-2" style="display:none;">
-                    <img id="hoverImagePreview" src="" alt="Hover Preview"
-                      style="max-width: 60%; height: auto;">
+                    <img id="hoverImagePreview" src="" alt="Hover Preview" style="max-width: 60%; height: auto;">
                   </div>
 
                   {{-- Default input --}}
                 @else
                   <input type="{{ $config['type'] ?? 'text' }}" class="form-control {{ $config['class'] ?? '' }}"
-                    name="{{ $name }}" id="{{ $config['id'] ?? $name }}"
-                    value="{{ $config['value'] ?? '' }}">
+                    name="{{ $name }}" id="{{ $config['id'] ?? $name }}" value="{{ $config['value'] ?? '' }}">
                 @endif
               </div>
             @endif
@@ -430,82 +404,6 @@
   <script src="{{ asset('/public/backend/assetss/select2/select2.min.js') }}"></script>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const input = document.getElementById('bannerImageInput_book_collection_banner');
-      const preview = document.getElementById('bannerImagePreview');
-      const editor = document.querySelector('.hotspot-editor');
-      const container = document.getElementById('hotspotContainer');
-      const hotspotData = document.getElementById('hotspotData');
-      let hotspots = [];
-
-      // Preview the image on change
-      input.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-          preview.src = event.target.result;
-          editor.style.display = 'inline-block';
-          hotspots = []; // reset hotspots when new image is chosen
-          container.innerHTML = '';
-          hotspotData.value = '';
-        };
-        reader.readAsDataURL(file);
-      });
-
-      // Add hotspot on image click
-      preview.addEventListener('click', function(e) {
-        const rect = preview.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        const leftPercent = (x / rect.width) * 100;
-        const topPercent = (y / rect.height) * 100;
-
-        const sku = prompt('Enter Product SKU:');
-        if (!sku) return;
-
-        const spot = {
-          product_sku: sku,
-          top: topPercent.toFixed(2) + '%',
-          left: leftPercent.toFixed(2) + '%'
-        };
-
-        hotspots.push(spot);
-        updateHotspots();
-      });
-
-      // Update hotspot display and hidden input
-      function updateHotspots() {
-        container.innerHTML = '';
-        hotspots.forEach((spot, index) => {
-          const div = document.createElement('div');
-          div.className = 'hotspot';
-          div.style.top = spot.top;
-          div.style.left = spot.left;
-          div.title = `SKU: ${spot.product_sku}`;
-          div.addEventListener('contextmenu', function(e) {
-            e.preventDefault();
-            hotspots.splice(index, 1);
-            updateHotspots();
-          });
-          container.appendChild(div);
-        });
-        hotspotData.value = JSON.stringify(hotspots);
-      }
-
-      // Restore saved hotspots when editing an existing banner
-      const existing = hotspotData.value ? JSON.parse(hotspotData.value) : null;
-      if (existing && Array.isArray(existing) && existing.length > 0) {
-        editor.style.display = 'inline-block';
-        hotspots = existing;
-        updateHotspots();
-      }
-    });
-
-
-
     $('#optionInput').select2({
       placeholder: 'Select Categories',
       // maximumSelectionLength: 4 // Restrict to 4 selections
@@ -846,15 +744,19 @@
         const hoverImageName = btn.data('hoverimage');
         if (imageName) {
           $('#imagePreview').attr('src', `{{ asset('public/storage/uploads/banners') }}/${imageName}`);
-          $('#imagePreviewWrapper, #imageExistingInput').val(imageName).show();
+          $('#imageExistingInput').val(imageName);
+          $('#imagePreviewWrapper').show();
         } else {
-          $('#imagePreviewWrapper, #imageExistingInput').val('').hide();
+          $('#imageExistingInput').val('');
+          $('#imagePreviewWrapper').hide();
         }
         if (hoverImageName) {
           $('#hoverImagePreview').attr('src', `{{ asset('public/storage/uploads/banners') }}/${hoverImageName}`);
-          $('#hoverImagePreviewWrapper, #hoverImageExistingInput').val(hoverImageName).show();
+          $('#hoverImageExistingInput').val(hoverImageName);
+          $('#hoverImagePreviewWrapper').show();
         } else {
-          $('#hoverImagePreviewWrapper, #hoverImageExistingInput').val('').hide();
+          $('#hoverImageExistingInput').val('');
+          $('#hoverImagePreviewWrapper').hide();
         }
         $('#addBannerForm').removeClass('d-none');
       });
