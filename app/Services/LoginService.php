@@ -32,57 +32,57 @@ class LoginService
   // }
 
   public static function authenticationCheck($params): ?array
-{
-    $email = $params->email ?? null;
-    $phone = $params->phone ?? null;
+  {
+    $email = $params->email ?? '';
+    $phone = $params->phone ?? '';
     $countryCode = $params->country_code ?? null;
 
     // Build full phone number
     $fullPhone = null;
 
     if ($phone) {
-        $fullPhone = $countryCode . $phone;
+      $fullPhone = $countryCode . $phone;
     }
 
     // Find existing user
     if ($email) {
-        $user = User::where('email', $email)->first();
+      $user = User::where('email', $email)->first();
     } else {
-        $user = User::where('phone', $fullPhone)->first();
+      $user = User::where('phone', $fullPhone)->first();
     }
 
     $defaultPassword = config('defaults.default_password');
 
     // Create user if not exists
     if (!$user) {
-        $user = User::create([
-            'first_name' => 'Guest',
-            'email' => $email,
-            'phone' => $fullPhone,
-            'password' => bcrypt($defaultPassword),
-        ]);
+      $user = User::create([
+        'first_name' => 'Guest',
+        'email' => $email,
+        'phone' => $fullPhone,
+        'password' => bcrypt($defaultPassword),
+      ]);
     } elseif ((int) $user->status === 2) {
-        return null;
+      return null;
     }
 
     // Email OTP
     if ($email) {
-        self::sendEmailOTP($user);
+      self::sendEmailOTP($user);
 
-        return [
-            'user' => $user,
-            'otp' => null,
-        ];
+      return [
+        'user' => $user,
+        'otp' => null,
+      ];
     }
 
     // Mobile OTP
     $otp = self::generatePhoneOTP($user);
 
     return [
-        'user' => $user,
-        'otp' => $otp,
+      'user' => $user,
+      'otp' => $otp,
     ];
-}
+  }
 
   public static function generatePhoneOTP(User $user): int
   {
