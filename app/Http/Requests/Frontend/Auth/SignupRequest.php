@@ -6,64 +6,48 @@ use App\Http\Requests\BaseRequest;
 
 class SignupRequest extends BaseRequest
 {
-    public function rules(): array
-    {
-        return [
-            'email' => [
-                'nullable',
-                'required_without:phone',
-                'prohibited_with:phone',
-                'email:rfc,dns',
-            ],
+  public function rules(): array
+  {
+    return [
+      'email' => [
+        'nullable',
+        'required_without:phone',
+        'email:rfc,dns',
+      ],
 
-            'phone' => [
-                'nullable',
-                'required_without:email',
-                'prohibited_with:email',
-                'string',
-                'regex:/^[0-9]{6,15}$/',
-            ],
+      'phone' => [
+        'nullable',
+        'required_without:email',
+        'string',
+        'regex:/^[0-9]{6,15}$/',
+      ],
 
-            'country_code' => [
-                'nullable',
-                'required_with:phone',
-                'prohibited_with:email',
-                'string',
-                'regex:/^\+[1-9][0-9]{0,3}$/',
-            ],
-        ];
-    }
+      'country_code' => [
+        'nullable',
+        'required_with:phone',
+        'string',
+        'regex:/^\+[1-9][0-9]{0,3}$/',
+      ],
+    ];
+  }
 
-    public function messages(): array
-    {
-        return [
-            'email.required_without' => __('validation.required', [
-                'attribute' => 'Email or Mobile Number',
-            ]),
+  public function messages(): array
+  {
+    return [
+      'email.required_without' => 'Email or mobile number is required.',
+      'email.email' => __('validation.invalid', [
+        'attribute' => 'Email Format',
+      ]),
 
-            'email.prohibited_with' => 'Email cannot be provided with mobile number.',
+      'phone.required_without' => 'Email or mobile number is required.',
+      'phone.regex' => __('validation.invalid', [
+        'attribute' => 'Mobile Number',
+      ]),
 
-            'email.email' => __('validation.invalid', [
-                'attribute' => 'Email Format',
-            ]),
-
-            'phone.required_without' => __('validation.required', [
-                'attribute' => 'Email or Mobile Number',
-            ]),
-
-            'phone.prohibited_with' => 'Mobile number cannot be provided with email.',
-
-            'phone.regex' => __('validation.invalid', [
-                'attribute' => 'Mobile Number',
-            ]),
-
-            'country_code.required_with' => 'Country code is required with mobile number.',
-
-            'country_code.prohibited_with' => 'Country code cannot be provided with email.',
-
-            'country_code.regex' => __('validation.invalid', [
-                'attribute' => 'Country Code',
-            ]),
-        ];
-    }
+      'country_code.required_with' => 'Country code is required with mobile number.',
+      'country_code.regex' => __('validation.invalid', [
+        'attribute' => 'Country Code',
+      ]),
+    ];
+  }
 }
