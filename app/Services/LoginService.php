@@ -31,11 +31,65 @@ class LoginService
   //   return $user;
   // }
 
+  // public static function authenticationCheck($params): ?array
+  // {
+  //   $email = $params->email ?? '';
+  //   $phone = $params->phone ?? '';
+  //   $countryCode = $params->country_code ?? null;
+
+  //   // Build full phone number
+  //   $fullPhone = null;
+
+  //   if ($phone) {
+  //     $fullPhone = $countryCode . $phone;
+  //   }
+
+  //   // Find existing user
+  //   if ($email) {
+  //     $user = User::where('email', $email)->first();
+  //   } else {
+  //     $user = User::where('phone', $fullPhone)->first();
+  //   }
+
+  //   $defaultPassword = config('defaults.default_password');
+
+  //   // Create user if not exists
+  //   if (!$user) {
+  //     $user = User::create([
+  //       'first_name' => 'Guest',
+  //       'email' => $email,
+  //       'phone' => $fullPhone,
+  //       'password' => bcrypt($defaultPassword),
+  //     ]);
+  //   } elseif ((int) $user->status === 2) {
+  //     return null;
+  //   }
+
+  //   // Email OTP
+  //   if ($email) {
+  //     self::sendEmailOTP($user);
+
+  //     return [
+  //       'user' => $user,
+  //       'otp' => null,
+  //     ];
+  //   }
+
+  //   // Mobile OTP
+  //   $otp = self::generatePhoneOTP($user);
+
+  //   return [
+  //     'user' => $user,
+  //     'otp' => $otp,
+  //   ];
+  // }
+
   public static function authenticationCheck($params): ?array
   {
-    $email = $params->email ?? '';
-    $phone = $params->phone ?? '';
-    $countryCode = $params->country_code ?? null;
+    // Get request values
+    $email = $params->email ?: null;
+    $phone = $params->phone ?: null;
+    $countryCode = $params->country_code ?: null;
 
     // Build full phone number
     $fullPhone = null;
@@ -44,28 +98,52 @@ class LoginService
       $fullPhone = $countryCode . $phone;
     }
 
-    // Find existing user
+    /*
+    |--------------------------------------------------------------------------
+    | Find Existing User
+    |--------------------------------------------------------------------------
+    */
+
     if ($email) {
+      // Login/Register using email
       $user = User::where('email', $email)->first();
     } else {
+      // Login/Register using phone
       $user = User::where('phone', $fullPhone)->first();
     }
 
-    $defaultPassword = config('defaults.default_password');
+    /*
+    |--------------------------------------------------------------------------
+    | Create User - First Time Registration
+    |--------------------------------------------------------------------------
+    */
 
-    // Create user if not exists
     if (!$user) {
       $user = User::create([
         'first_name' => 'Guest',
-        'email' => $email,
-        'phone' => $fullPhone,
-        'password' => bcrypt($defaultPassword),
+        'email'      => $email,
+        'phone'      => $fullPhone,
+        'password'   => bcrypt(config('defaults.default_password')),
       ]);
-    } elseif ((int) $user->status === 2) {
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Check Suspended User
+    |--------------------------------------------------------------------------
+    */
+
+    if ((int) $user->status === 2) {
       return null;
     }
 
-    // Email OTP
+    /*
+    |--------------------------------------------------------------------------
+    | Send / Generate OTP
+    |--------------------------------------------------------------------------
+    */
+
+    // Email authentication
     if ($email) {
       self::sendEmailOTP($user);
 
@@ -75,7 +153,8 @@ class LoginService
       ];
     }
 
-    // Mobile OTP
+    // Phone authentication
+    // Currently no SMS gateway, so return OTP in response
     $otp = self::generatePhoneOTP($user);
 
     return [
