@@ -11,24 +11,106 @@ use Illuminate\Support\Facades\Cache;
 
 class LoginService
 {
-  public static function authenticationCheck($params): ?User
-  {
-    $email = $params->email;
-    $user = User::where('email', $email)->first();
+  // public static function authenticationCheck($params): ?User
+  // {
+  //   $email = $params->email;
+  //   $user = User::where('email', $email)->first();
+  //   $defaultPassword = config('defaults.default_password');
+
+  //   if (!$user) {
+  //     $user = User::create([
+  //       'first_name' => 'Guest',
+  //       'email' => $email,
+  //       'phone' => null,
+  //       'password' => bcrypt($defaultPassword),
+  //     ]);
+  //   } elseif ((int) $user->status === 2)
+  //     return null;
+
+  //   self::sendEmailOTP($user);
+  //   return $user;
+  // }
+
+  public static function authenticationCheck($params): ?array
+{
+    $email = $params->email ?? null;
+    $phone = $params->phone ?? null;
+    $countryCode = $params->country_code ?? null;
+
+    // Build full phone number
+    $fullPhone = null;
+
+    if ($phone) {
+        $fullPhone = $countryCode . $phone;
+    }
+
+    // Find existing user
+    if ($email) {
+        $user = User::where('email', $email)->first();
+    } else {
+        $user = User::where('phone', $fullPhone)->first();
+    }
+
     $defaultPassword = config('defaults.default_password');
 
+    // Create user if not exists
     if (!$user) {
-      $user = User::create([
-        'first_name' => 'Guest',
-        'email' => $email,
-        'phone' => null,
-        'password' => bcrypt($defaultPassword),
-      ]);
-    } elseif ((int) $user->status === 2)
-      return null;
+        $user = User::create([
+            'first_name' => 'Guest',
+            'email' => $email,
+            'phone' => $fullPhone,
+            'password' => bcrypt($defaultPassword),
+        ]);
+    } elseif ((int) $user->status === 2) {
+        return null;
+    }
 
-    self::sendEmailOTP($user);
-    return $user;
+    // Email OTP
+    if ($email) {
+        self::sendEmailOTP($user);
+
+        return [
+            'user' => $user,
+            'otp' => null,
+        ];
+    }
+
+    // Mobile OTP
+    $otp = self::generatePhoneOTP($user);
+
+    return [
+        'user' => $user,
+        'otp' => $otp,
+    ];
+}
+
+  public static function generatePhoneOTP(User $user): int
+  {
+    // Max 3 OTP requests per 60 seconds
+    $cacheKey = "otp_request_count_user_{$user->id}";
+    $requestCount = Cache::get($cacheKey, 0);
+
+    if ($requestCount >= 3) {
+      abort(response()->json([
+        'success' => false,
+        'message' => __('response.otp.error.too_many_requests', [
+          'seconds' => 60,
+        ]),
+      ], 429));
+    }
+
+    Cache::put($cacheKey, $requestCount + 1, 60);
+
+    $otp = random_int(100000, 999999);
+
+    Verification::updateOrCreate(
+      ['user_id' => $user->id],
+      [
+        'email_otp' => $otp, // rename to `otp` later
+      ]
+    );
+
+    return $otp;
   }
 
   public static function verifyHash(string $hash): bool

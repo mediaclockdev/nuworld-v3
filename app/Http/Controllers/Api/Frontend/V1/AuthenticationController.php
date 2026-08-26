@@ -37,13 +37,41 @@ class AuthenticationController extends Controller
    *     @OA\Response(response=401, description="Authentication failed or user suspended")
    * )
    */
+  // public function login(SignupRequest $request): JsonResponse
+  // {
+  //   $user = LoginService::authenticationCheck($request);
+  //   if (empty($user))
+  //     return ApiResponse::error(__('response.auth.suspended'));
+  //   $hashCode = Str::random(16) . Hashids::encode(time() . $user->id);
+  //   return ApiResponse::success(['hash' => $hashCode], __('response.otp.success.sent.email'));
+  // }
+
   public function login(SignupRequest $request): JsonResponse
   {
-    $user = LoginService::authenticationCheck($request);
-    if (empty($user))
+    $result = LoginService::authenticationCheck($request);
+
+    if (empty($result)) {
       return ApiResponse::error(__('response.auth.suspended'));
+    }
+
+    $user = $result['user'];
+    $otp = $result['otp'] ?? null;
+
     $hashCode = Str::random(16) . Hashids::encode(time() . $user->id);
-    return ApiResponse::success(['hash' => $hashCode], __('response.otp.success.sent.email'));
+
+    $response = [
+      'hash' => $hashCode,
+    ];
+
+    // Temporary: return OTP for mobile login
+    if ($otp) {
+      $response['otp'] = $otp;
+    }
+
+    return ApiResponse::success(
+      $response,
+      __('response.otp.success.sent')
+    );
   }
 
 
