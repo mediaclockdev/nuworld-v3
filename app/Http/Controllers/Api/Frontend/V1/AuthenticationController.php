@@ -70,7 +70,7 @@ class AuthenticationController extends Controller
 
     return ApiResponse::success(
       $response,
-      __('response.otp.success.sent')
+      __('response.otp.success.sent.phone')
     );
   }
 
