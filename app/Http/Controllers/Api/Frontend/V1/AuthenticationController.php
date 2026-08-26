@@ -96,20 +96,39 @@ class AuthenticationController extends Controller
    *     @OA\Response(response=400, description="Invalid OTP or Hash/OTP expired")
    * )
    */
-  public function verifyOtp(OtpRequest $request, EmailRequest $emailRequest, HashRequest $hashRequest): JsonResponse
+  // public function verifyOtp(OtpRequest $request, EmailRequest $emailRequest, HashRequest $hashRequest): JsonResponse
+  // {
+  //   $deviceId = $request->header('X-Device-ID') ?? (string) Str::uuid();
+
+  //   $response = LoginService::otpVerification(
+  //     $request->merge([
+  //       'email' => $emailRequest->email,
+  //       'hash' => $hashRequest->hash,
+  //       'device_id' => $deviceId
+  //     ])
+  //   );
+  //   return (isset($response['success']) && $response['success'] === false)
+  //     ? ApiResponse::error($response['message'])
+  //     : ApiResponse::success(['token' => $response['token']], __('response.otp.success.verified'));
+  // }
+
+  public function verifyOtp(OtpRequest $request, HashRequest $hashRequest): JsonResponse
   {
     $deviceId = $request->header('X-Device-ID') ?? (string) Str::uuid();
 
     $response = LoginService::otpVerification(
       $request->merge([
-        'email' => $emailRequest->email,
         'hash' => $hashRequest->hash,
-        'device_id' => $deviceId
+        'device_id' => $deviceId,
       ])
     );
+
     return (isset($response['success']) && $response['success'] === false)
       ? ApiResponse::error($response['message'])
-      : ApiResponse::success(['token' => $response['token']], __('response.otp.success.verified'));
+      : ApiResponse::success(
+        ['token' => $response['token']],
+        __('response.otp.success.verified')
+      );
   }
 
   /**

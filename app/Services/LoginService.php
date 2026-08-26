@@ -120,25 +120,71 @@ class LoginService
   }
 
 
+  // public static function otpVerification($params): array
+  // {
+  //   if (!self::verifyHash($params->hash))
+  //     return ['success' => false, 'message' => __('response.error.expired', ['item' => 'Hash'])];
+
+  //   $decoded = Hashids::decode(substr($params->hash, 16))[0] ?? '';
+  //   $uid = (int)substr($decoded, 10);
+
+  //   $user = User::find($uid);
+
+  //   $v = Verification::where([['user_id', $uid], ['email_otp', $params->otp]])->first();
+
+  //   if (!$user || !$v) {
+  //     return ['success' => false, 'message' => __('response.otp.error.invalid')];
+  //   }
+
+  //   $v->update(['email_otp' => null]);
+
+  //   return ['success' => true, 'token' => JWTAuth::claims(['device_id' => $params->device_id])->fromUser($user)];
+  // }
+
   public static function otpVerification($params): array
   {
-    if (!self::verifyHash($params->hash))
-      return ['success' => false, 'message' => __('response.error.expired', ['item' => 'Hash'])];
-
-    $decoded = Hashids::decode(substr($params->hash, 16))[0] ?? '';
-    $uid = (int)substr($decoded, 10);
-
-    $user = User::find($uid);
-
-    $v = Verification::where([['user_id', $uid], ['email_otp', $params->otp]])->first();
-
-    if (!$user || !$v) {
-      return ['success' => false, 'message' => __('response.otp.error.invalid')];
+    // Validate hash
+    if (!self::verifyHash($params->hash)) {
+      return [
+        'success' => false,
+        'message' => __('response.error.expired', [
+          'item' => 'Hash'
+        ]),
+      ];
     }
 
-    $v->update(['email_otp' => null]);
+    // Decode user ID
+    $decoded = Hashids::decode(substr($params->hash, 16))[0] ?? '';
+    $uid = (int) substr($decoded, 10);
 
-    return ['success' => true, 'token' => JWTAuth::claims(['device_id' => $params->device_id])->fromUser($user)];
+    // Find user
+    $user = User::find($uid);
+
+    // Find matching OTP
+    $v = Verification::where([
+      ['user_id', $uid],
+      ['email_otp', $params->otp],
+    ])->first();
+
+    if (!$user || !$v) {
+      return [
+        'success' => false,
+        'message' => __('response.otp.error.invalid'),
+      ];
+    }
+
+    // Clear OTP after successful verification
+    $v->update([
+      'email_otp' => null,
+    ]);
+
+    // Generate JWT
+    return [
+      'success' => true,
+      'token' => JWTAuth::claims([
+        'device_id' => $params->device_id,
+      ])->fromUser($user),
+    ];
   }
 
   // public static function sendEmailOTP($user, $hash = null): void
