@@ -6,24 +6,30 @@ use App\Http\Requests\BaseRequest;
 
 class OtpRequest extends BaseRequest
 {
-
-  /**
-   * Get the validation rules that apply to the request.
-   *
-   * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-   */
   public function rules(): array
   {
     return [
-      'otp'       => 'required|digits:6',
+      'otp' => [
+        'required',
+        'digits:6',
+      ],
+
+      'fcm_token' => [
+        'nullable',
+        'string',
+        'max:500',
+      ],
     ];
   }
 
   public function messages(): array
   {
     return [
-      'otp.required'        => __('validation.required', ['attribute' => 'OTP']),
-      'otp.digits'          => 'Otp must be 6 digits.',
+      'otp.required' => 'OTP is required.',
+
+      'otp.digits' => 'OTP must be exactly 6 digits.',
+
+      'fcm_token.string' => 'Invalid FCM token.',
     ];
   }
 }

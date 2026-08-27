@@ -11,6 +11,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\JsonResponse;
 use PHPOpenSourceSaver\JWTAuth\Contracts\JWTSubject;
 use Vinkla\Hashids\Facades\Hashids;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements JWTSubject
 {
@@ -62,6 +63,10 @@ class User extends Authenticatable implements JWTSubject
       'email_verified_at' => 'datetime',
       'password' => 'hashed',
     ];
+  }
+  public function devices(): HasMany
+  {
+    return $this->hasMany(UserDevice::class);
   }
 
   public function getNameAttribute(): string

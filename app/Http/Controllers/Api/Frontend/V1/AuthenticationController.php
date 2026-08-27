@@ -112,21 +112,30 @@ class AuthenticationController extends Controller
   //     : ApiResponse::success(['token' => $response['token']], __('response.otp.success.verified'));
   // }
 
-  public function verifyOtp(OtpRequest $request, HashRequest $hashRequest): JsonResponse
-  {
-    $deviceId = $request->header('X-Device-ID') ?? (string) Str::uuid();
+  public function verifyOtp(
+    OtpRequest $request,
+    HashRequest $hashRequest
+  ): JsonResponse {
+    $deviceId = $request->header('X-Device-ID')
+      ?? (string) Str::uuid();
 
     $response = LoginService::otpVerification(
       $request->merge([
         'hash' => $hashRequest->hash,
         'device_id' => $deviceId,
+        'fcm_token' => $request->fcm_token,
       ])
     );
 
-    return (isset($response['success']) && $response['success'] === false)
+    return (
+      isset($response['success'])
+      && $response['success'] === false
+    )
       ? ApiResponse::error($response['message'])
       : ApiResponse::success(
-        ['token' => $response['token']],
+        [
+          'token' => $response['token'],
+        ],
         __('response.otp.success.verified')
       );
   }

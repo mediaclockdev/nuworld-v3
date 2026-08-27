@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Verification;
 use App\Models\User;
+use App\Models\UserDevice;
 use PHPOpenSourceSaver\JWTAuth\Facades\JWTAuth;
 use Vinkla\Hashids\Facades\Hashids;
 use Illuminate\Support\Facades\Cache;
@@ -220,49 +221,148 @@ class LoginService
   //   return ['success' => true, 'token' => JWTAuth::claims(['device_id' => $params->device_id])->fromUser($user)];
   // }
 
+  // public static function otpVerification($params): array
+  // {
+  //   // Validate hash
+  //   if (!self::verifyHash($params->hash)) {
+  //     return [
+  //       'success' => false,
+  //       'message' => __('response.error.expired', [
+  //         'item' => 'Hash'
+  //       ]),
+  //     ];
+  //   }
+
+  //   // Decode user ID
+  //   $decoded = Hashids::decode(substr($params->hash, 16))[0] ?? '';
+  //   $uid = (int) substr($decoded, 10);
+
+  //   // Find user
+  //   $user = User::find($uid);
+
+  //   // Find matching OTP
+  //   $v = Verification::where([
+  //     ['user_id', $uid],
+  //     ['email_otp', $params->otp],
+  //   ])->first();
+
+  //   if (!$user || !$v) {
+  //     return [
+  //       'success' => false,
+  //       'message' => __('response.otp.error.invalid'),
+  //     ];
+  //   }
+
+  //   // Clear OTP after successful verification
+  //   $v->update([
+  //     'email_otp' => null,
+  //   ]);
+
+  //   // Generate JWT
+  //   return [
+  //     'success' => true,
+  //     'token' => JWTAuth::claims([
+  //       'device_id' => $params->device_id,
+  //     ])->fromUser($user),
+  //   ];
+  // }
+
   public static function otpVerification($params): array
   {
-    // Validate hash
+    /*
+    |--------------------------------------------------------------------------
+    | Verify Hash
+    |--------------------------------------------------------------------------
+    */
+
     if (!self::verifyHash($params->hash)) {
       return [
         'success' => false,
         'message' => __('response.error.expired', [
-          'item' => 'Hash'
+          'item' => 'Hash',
         ]),
       ];
     }
 
-    // Decode user ID
-    $decoded = Hashids::decode(substr($params->hash, 16))[0] ?? '';
+    /*
+    |--------------------------------------------------------------------------
+    | Decode User ID
+    |--------------------------------------------------------------------------
+    */
+
+    $decoded = Hashids::decode(
+      substr($params->hash, 16)
+    )[0] ?? '';
+
     $uid = (int) substr($decoded, 10);
 
-    // Find user
+    /*
+    |--------------------------------------------------------------------------
+    | Find User
+    |--------------------------------------------------------------------------
+    */
+
     $user = User::find($uid);
 
-    // Find matching OTP
-    $v = Verification::where([
+    /*
+    |--------------------------------------------------------------------------
+    | Verify OTP
+    |--------------------------------------------------------------------------
+    */
+
+    $verification = Verification::where([
       ['user_id', $uid],
       ['email_otp', $params->otp],
     ])->first();
 
-    if (!$user || !$v) {
+    if (!$user || !$verification) {
       return [
         'success' => false,
         'message' => __('response.otp.error.invalid'),
       ];
     }
 
-    // Clear OTP after successful verification
-    $v->update([
+    /*
+    |--------------------------------------------------------------------------
+    | Clear OTP
+    |--------------------------------------------------------------------------
+    */
+
+    $verification->update([
       'email_otp' => null,
     ]);
 
-    // Generate JWT
+    /*
+    |--------------------------------------------------------------------------
+    | Save Device / FCM Token
+    |--------------------------------------------------------------------------
+    */
+
+    if (!empty($params->device_id)) {
+      UserDevice::updateOrCreate(
+        [
+          'user_id' => $user->id,
+          'device_id' => $params->device_id,
+        ],
+        [
+          'fcm_token' => $params->fcm_token ?: null,
+        ]
+      );
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Generate JWT
+    |--------------------------------------------------------------------------
+    */
+
+    $token = JWTAuth::claims([
+      'device_id' => $params->device_id,
+    ])->fromUser($user);
+
     return [
       'success' => true,
-      'token' => JWTAuth::claims([
-        'device_id' => $params->device_id,
-      ])->fromUser($user),
+      'token' => $token,
     ];
   }
 
