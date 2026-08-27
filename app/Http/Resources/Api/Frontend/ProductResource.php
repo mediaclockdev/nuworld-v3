@@ -20,7 +20,7 @@ class ProductResource extends JsonResource
     $isDiscounted = !$salePrice['regular_price_true'];
     //$averageRating = $this->variantReviews()->avg('rating');
     //$averageRating = $this->variantReviews()->avg('rating');
-    $attributes = $this->attribute_details ?? [];
+    $attributes = $this->variantAttributes ?? [];
 
     return [
       'id' => Hashids::encode($this->id),
