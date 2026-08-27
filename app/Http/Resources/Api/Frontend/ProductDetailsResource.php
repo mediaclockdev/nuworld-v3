@@ -18,7 +18,7 @@ class ProductDetailsResource extends JsonResource
     $salePrice = findSalePrice($this->id);
     $isDiscounted = !$salePrice['regular_price_true'];
     $averageRating = $this->variantReviews()->avg('rating');
-    $attributes = $this->attribute_details ?? [];
+    $attributes = $this->variantAttributes ?? [];
     $cartQty = cartQuantity($this->id);
     // Safely collect all review images
     $reviewImages = collect($this->variantReviews)
