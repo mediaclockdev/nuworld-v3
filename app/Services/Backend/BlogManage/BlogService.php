@@ -16,6 +16,7 @@ class BlogService extends BaseFormService
   {
     parent::__construct(Blog::class, 'Blog', 'blog');
   }
+  
 
   /**
    * Prepare data for blog create form.

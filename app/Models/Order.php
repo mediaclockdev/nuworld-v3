@@ -249,7 +249,7 @@ class Order extends Model
         return $query->whereBetween('created_at', $daterange);
       })
       ->get();
-  }
+  }      
 
   public static function topSellingProducts($daterange = null)
   {

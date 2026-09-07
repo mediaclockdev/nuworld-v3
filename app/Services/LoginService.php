@@ -85,9 +85,87 @@ class LoginService
   //   ];
   // }
 
+  // public static function authenticationCheck($params): ?array
+  // {
+  //   // Get request values
+  //   $email = $params->email ?: null;
+  //   $phone = $params->phone ?: null;
+  //   $countryCode = $params->country_code ?: null;
+
+  //   // Build full phone number
+  //   $fullPhone = null;
+
+  //   if ($phone) {
+  //     $fullPhone = $countryCode . $phone;
+  //   }
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Find Existing User
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   if ($email) {
+  //     // Login/Register using email
+  //     $user = User::where('email', $email)->first();
+  //   } else {
+  //     // Login/Register using phone
+  //     $user = User::where('phone', $fullPhone)->first();
+  //   }
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Create User - First Time Registration
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   if (!$user) {
+  //     $user = User::create([
+  //       'first_name' => 'Guest',
+  //       'email'      => $email,
+  //       'phone'      => $fullPhone,
+  //       'password'   => bcrypt(config('defaults.default_password')),
+  //     ]);
+  //   }
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Check Suspended User
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   if ((int) $user->status === 2) {
+  //     return null;
+  //   }
+
+  //   /*
+  //   |--------------------------------------------------------------------------
+  //   | Send / Generate OTP
+  //   |--------------------------------------------------------------------------
+  //   */
+
+  //   // Email authentication
+  //   if ($email) {
+  //     self::sendEmailOTP($user);
+
+  //     return [
+  //       'user' => $user,
+  //       'otp' => null,
+  //     ];
+  //   }
+
+  //   // Phone authentication
+  //   // Currently no SMS gateway, so return OTP in response
+  //   $otp = self::generatePhoneOTP($user);
+
+  //   return [
+  //     'user' => $user,
+  //     'otp' => $otp,
+  //   ];
+  // }
+
   public static function authenticationCheck($params): ?array
   {
-    // Get request values
     $email = $params->email ?: null;
     $phone = $params->phone ?: null;
     $countryCode = $params->country_code ?: null;
@@ -99,64 +177,44 @@ class LoginService
       $fullPhone = $countryCode . $phone;
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Find Existing User
-    |--------------------------------------------------------------------------
-    */
-
+    // Find existing user
     if ($email) {
-      // Login/Register using email
       $user = User::where('email', $email)->first();
     } else {
-      // Login/Register using phone
       $user = User::where('phone', $fullPhone)->first();
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Create User - First Time Registration
-    |--------------------------------------------------------------------------
-    */
-
+    // Create user if first time
     if (!$user) {
       $user = User::create([
         'first_name' => 'Guest',
-        'email'      => $email,
-        'phone'      => $fullPhone,
-        'password'   => bcrypt(config('defaults.default_password')),
+        'email' => $email,
+        'phone' => $fullPhone,
+        'password' => bcrypt(
+          config('defaults.default_password')
+        ),
       ]);
     }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Check Suspended User
-    |--------------------------------------------------------------------------
-    */
-
+    // Suspended user
     if ((int) $user->status === 2) {
       return null;
     }
 
     /*
     |--------------------------------------------------------------------------
-    | Send / Generate OTP
+    | Generate OTP
     |--------------------------------------------------------------------------
     */
 
-    // Email authentication
     if ($email) {
-      self::sendEmailOTP($user);
-
-      return [
-        'user' => $user,
-        'otp' => null,
-      ];
+      // Email temporarily disabled.
+      // Generate OTP and return it.
+      $otp = self::sendEmailOTP($user);
+    } else {
+      // Phone OTP
+      $otp = self::generatePhoneOTP($user);
     }
-
-    // Phone authentication
-    // Currently no SMS gateway, so return OTP in response
-    $otp = self::generatePhoneOTP($user);
 
     return [
       'user' => $user,
@@ -396,49 +454,109 @@ class LoginService
 
 
 
-  public static function sendEmailOTP($user, $hash = null): void
+  // public static function sendEmailOTP($user, $hash = null): void
+  // {
+  //   if ($hash) {
+  //     self::verifyHash($hash);
+
+  //     $decoded = Hashids::decode(substr($hash, 16))[0] ?? '';
+  //     $uid = (int)substr($decoded, 10);
+
+  //     $user = User::find($uid);
+  //   }
+
+  //   // 🔹 Per-user rate limit: max 3 OTPs per 60s
+  //   $cacheKey = "otp_request_count_user_{$user->id}";
+  //   $requestCount = Cache::get($cacheKey, 0);
+
+  //   if ($requestCount >= 3) {
+  //     // Too many requests → abort with JSON
+  //     abort(response()->json([
+  //       'success' => false,
+  //       'message' => __('response.otp.error.too_many_requests', ['seconds' => 60]),
+  //     ], 429));
+  //   }
+
+  //   // Increase request count, reset after 60 seconds
+  //   Cache::put($cacheKey, $requestCount + 1, 60);
+
+  //   // 🔹 Generate OTP
+  //   $otp = rand(100000, 999999);
+
+  //   // Save OTP in DB
+  //   Verification::updateOrCreate(
+  //     ['user_id' => $user->id],
+  //     ['email_otp' => $otp]
+  //   );
+
+  //   // Send email
+  //   $subject = 'Your OTP Code';
+  //   $template = 'emails.otp';
+  //   $params = [
+  //     'name' => $user->name,
+  //     'otp'  => $otp,
+  //   ];
+
+  //   app('EmailService')->sendEmail($user->email, $subject, $template, $params, [], []);
+  // }
+
+  public static function sendEmailOTP($user, $hash = null): int
   {
     if ($hash) {
       self::verifyHash($hash);
 
       $decoded = Hashids::decode(substr($hash, 16))[0] ?? '';
-      $uid = (int)substr($decoded, 10);
+      $uid = (int) substr($decoded, 10);
 
       $user = User::find($uid);
     }
 
-    // 🔹 Per-user rate limit: max 3 OTPs per 60s
+    // Per-user rate limit: max 3 OTPs per 60s
     $cacheKey = "otp_request_count_user_{$user->id}";
     $requestCount = Cache::get($cacheKey, 0);
 
     if ($requestCount >= 3) {
-      // Too many requests → abort with JSON
       abort(response()->json([
         'success' => false,
-        'message' => __('response.otp.error.too_many_requests', ['seconds' => 60]),
+        'message' => __('response.otp.error.too_many_requests', [
+          'seconds' => 60
+        ]),
       ], 429));
     }
 
-    // Increase request count, reset after 60 seconds
+    // Increase request count
     Cache::put($cacheKey, $requestCount + 1, 60);
 
-    // 🔹 Generate OTP
-    $otp = rand(100000, 999999);
+    // Generate OTP
+    $otp = random_int(100000, 999999);
 
-    // Save OTP in DB
+    // Save OTP
     Verification::updateOrCreate(
       ['user_id' => $user->id],
       ['email_otp' => $otp]
     );
 
-    // Send email
-    $subject = 'Your OTP Code';
-    $template = 'emails.otp';
-    $params = [
-      'name' => $user->name,
-      'otp'  => $otp,
-    ];
+    /*
+    |--------------------------------------------------------------------------
+    | Email temporarily disabled
+    |--------------------------------------------------------------------------
+    */
 
-    app('EmailService')->sendEmail($user->email, $subject, $template, $params, [], []);
+    // $subject = 'Your OTP Code';
+    // $template = 'emails.otp';
+
+    // $params = [
+    //     'name' => $user->name,
+    //     'otp'  => $otp,
+    // ];
+
+    // app('EmailService')->sendEmail(
+    //     $user->email,
+    //     $subject,
+    //     $template,
+    //     $params,
+    // );
+
+    return $otp;
   }
 }

@@ -46,18 +46,49 @@ class AuthenticationController extends Controller
   //   return ApiResponse::success(['hash' => $hashCode], __('response.otp.success.sent.email'));
   // }
 
+  // public function login(SignupRequest $request): JsonResponse
+  // {
+  //   $result = LoginService::authenticationCheck($request);
+
+  //   if (empty($result)) {
+  //     return ApiResponse::error(__('response.auth.suspended'));
+  //   }
+
+  //   $user = $result['user'];
+  //   $otp = $result['otp'] ?? null;
+
+  //   $hashCode = Str::random(16) . Hashids::encode(time() . $user->id);
+
+  //   $response = [
+  //     'hash' => $hashCode,
+  //   ];
+
+  //   // Temporary: return OTP for mobile login
+  //   if ($otp) {
+  //     $response['otp'] = $otp;
+  //   }
+
+  //   return ApiResponse::success(
+  //     $response,
+  //     __('response.otp.success.sent.phone')
+  //   );
+  // }
+
   public function login(SignupRequest $request): JsonResponse
   {
     $result = LoginService::authenticationCheck($request);
 
     if (empty($result)) {
-      return ApiResponse::error(__('response.auth.suspended'));
+      return ApiResponse::error(
+        __('response.auth.suspended')
+      );
     }
 
     $user = $result['user'];
     $otp = $result['otp'] ?? null;
 
-    $hashCode = Str::random(16) . Hashids::encode(time() . $user->id);
+    $hashCode = Str::random(16)
+      . Hashids::encode(time() . $user->id);
 
     $response = [
       'hash' => $hashCode,
@@ -68,9 +99,14 @@ class AuthenticationController extends Controller
       $response['otp'] = $otp;
     }
 
+    // Email or phone message
+    $message = $request->email
+      ? __('response.otp.success.sent.email')
+      : __('response.otp.success.sent.phone');
+
     return ApiResponse::success(
       $response,
-      __('response.otp.success.sent.phone')
+      $message
     );
   }
 

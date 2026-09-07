@@ -38,6 +38,6 @@ trait BaseCategoryDataTrait
       'parentCategories' => $parentCategories,
       'childCategories' => $childCategories,
       'grandchildCategories' => $grandchildCategories
-    ];
+    ]; 
   }
 }
