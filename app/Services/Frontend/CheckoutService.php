@@ -790,14 +790,14 @@ class CheckoutService
 
     $this->cartService->clearCart();
 
-    app('EmailService')->sendEmail(
-      $order->user->email,
-      "Your Order Confirmation - #{$order->order_number}",
-      'emails.frontend.order-confirmation',
-      ['user' => $order->user, 'order' => $order],
-      [],
-      adminMailsByRoleID([SiteSetting::where('key', 'order_copy_to_id')->value('value') ?? 1])
-    );
+    // app('EmailService')->sendEmail(
+    //   $order->user->email,
+    //   "Your Order Confirmation - #{$order->order_number}",
+    //   'emails.frontend.order-confirmation',
+    //   ['user' => $order->user, 'order' => $order],
+    //   [],
+    //   adminMailsByRoleID([SiteSetting::where('key', 'order_copy_to_id')->value('value') ?? 1])
+    // );
 
     return response()->json(['success' => true,  'data' => [
       'order_number' => $order->order_number,
