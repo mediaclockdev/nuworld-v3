@@ -27,6 +27,7 @@ class CategoryHotDealsBannerResource extends JsonResource
       'id'          => Hashids::encode($this->id),
       'banner_type' => $this->position,
       'settings'    => $settings,
+      
     ];
   }
 }
