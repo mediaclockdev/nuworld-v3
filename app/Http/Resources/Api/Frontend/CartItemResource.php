@@ -25,7 +25,7 @@ class CartItemResource extends JsonResource
 
     $totalPrice = $unitPrice * $qty;
 
-    $attributes = $variant->variantAttributes ?? [];
+    $attributes = $variant->attribute_details ?? [];
 
     return [
       'id' => Hashids::encode($this->id),
