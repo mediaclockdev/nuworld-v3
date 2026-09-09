@@ -25,7 +25,16 @@ class CartItemResource extends JsonResource
 
     $totalPrice = $unitPrice * $qty;
 
-    $attributes = $variant->variantAttributes ?? [];
+    $attributes = $variant->variantAttributes
+      ? $variant->variantAttributes->map(function ($variantAttribute) {
+        return [
+          'attribute_id' => $variantAttribute->attribute_id,
+          'attribute_name' => $variantAttribute->attribute?->name ?? '',
+          'attribute_value_id' => $variantAttribute->attribute_value_id,
+          'attribute_value' => $variantAttribute->attributeValue?->value ?? '',
+        ];
+      })->values()
+      : [];
 
     return [
       'id' => Hashids::encode($this->id),
@@ -37,9 +46,9 @@ class CartItemResource extends JsonResource
       'product_name' => $variant->product?->name ?? '',
       'name' => $variant->name ?? '',
       'sku' => $variant->sku ?? '',
+
       'attributes' => $attributes,
 
-      // ✅ Price info
       'unit_price' => displayPrice($unitPrice),
       'price' => displayPrice($totalPrice),
 
@@ -53,13 +62,16 @@ class CartItemResource extends JsonResource
         ? null
         : $sale['display_discount'],
 
-      // ✅ Stock
       'out_of_stock' => ($variant->inventory?->quantity ?? 0) < 1,
 
-      // ✅ Image
       'image' => !empty($variant->galleries[0]['file_name'])
-        ? asset('public/storage/uploads/media/products/images/' . $variant->galleries[0]['file_name'])
-        : asset('public/backend/assetss/images/products/product_thumb.jpg'),
+        ? asset(
+          'public/storage/uploads/media/products/images/'
+            . $variant->galleries[0]['file_name']
+        )
+        : asset(
+          'public/backend/assetss/images/products/product_thumb.jpg'
+        ),
     ];
   }
 }
