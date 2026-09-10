@@ -62,6 +62,8 @@ class CartItemResource extends JsonResource
         ? null
         : $sale['display_discount'],
 
+      'is_in_cart' => isInCart($variant->id, false),
+
       'out_of_stock' => ($variant->inventory?->quantity ?? 0) < 1,
 
       'image' => !empty($variant->galleries[0]['file_name'])
